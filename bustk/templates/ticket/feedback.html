@@ -1,0 +1,546 @@
+{% extends "ticket/base.html" %}
+
+{% block title %}Đánh giá - BusTicket{% endblock %}
+
+{% block content %}
+<style>
+    .feedback-container {
+        max-width: 1000px;
+        margin: 0 auto;
+    }
+
+    .feedback-header {
+        margin-bottom: 2rem;
+    }
+
+    .feedback-header h2 {
+        color: #1e3a5f;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+    }
+
+    .feedback-tabs {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 2rem;
+        border-bottom: 2px solid #e0e0e0;
+    }
+
+    .feedback-tab {
+        padding: 1rem;
+        background: none;
+        border: none;
+        cursor: pointer;
+        font-size: 0.95rem;
+        color: #666;
+        font-weight: 500;
+        transition: all 0.3s;
+        border-bottom: 3px solid transparent;
+        margin-bottom: -2px;
+    }
+
+    .feedback-tab.active {
+        color: #5b5bff;
+        border-bottom-color: #5b5bff;
+    }
+
+    .feedback-content {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1.5rem;
+    }
+
+    .feedback-card {
+        background-color: white;
+        border-radius: 8px;
+        padding: 1.5rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        transition: box-shadow 0.3s;
+    }
+
+    .feedback-card:hover {
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+
+    .trip-info {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .trip-image {
+        width: 80px;
+        height: 80px;
+        border-radius: 8px;
+        background-color: #e0e0e0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        flex-shrink: 0;
+    }
+
+    .trip-details h5 {
+        margin: 0 0 0.5rem 0;
+        font-weight: 600;
+        color: #1e3a5f;
+        font-size: 0.95rem;
+    }
+
+    .trip-details p {
+        margin: 0;
+        font-size: 0.85rem;
+        color: #999;
+    }
+
+    .rating-display {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+    }
+
+    .stars {
+        display: flex;
+        gap: 0.25rem;
+    }
+
+    .star {
+        color: #ffc107;
+        font-size: 0.9rem;
+    }
+
+    .rating-text {
+        font-size: 0.85rem;
+        color: #666;
+    }
+
+    .feedback-text {
+        color: #666;
+        font-size: 0.9rem;
+        line-height: 1.6;
+        margin-bottom: 1rem;
+    }
+
+    .feedback-author {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        font-size: 0.85rem;
+    }
+
+    .author-avatar {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        background-color: #5b5bff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: bold;
+    }
+
+    .write-feedback-form {
+        background-color: white;
+        border-radius: 8px;
+        padding: 2rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        grid-column: 1 / -1;
+    }
+
+    .form-section {
+        margin-bottom: 2rem;
+    }
+
+    .form-section label {
+        display: block;
+        font-weight: 600;
+        color: #1e3a5f;
+        margin-bottom: 0.75rem;
+    }
+
+    .star-rating {
+        display: flex;
+        gap: 0.5rem;
+        font-size: 2rem;
+    }
+
+    .star-rating .star {
+        cursor: pointer;
+        color: #ddd;
+        transition: color 0.3s;
+    }
+
+    .star-rating .star:hover,
+    .star-rating .star.selected {
+        color: #ffc107;
+    }
+
+    .form-group {
+        margin-bottom: 1rem;
+    }
+
+    .form-group input,
+    .form-group textarea {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid #e0e0e0;
+        border-radius: 6px;
+        font-family: inherit;
+        font-size: 0.95rem;
+    }
+
+    .form-group textarea {
+        resize: vertical;
+        min-height: 120px;
+    }
+
+    .form-group input:focus,
+    .form-group textarea:focus {
+        outline: none;
+        border-color: #5b5bff;
+        box-shadow: 0 0 0 3px rgba(91, 91, 255, 0.1);
+    }
+
+    .form-group small {
+        display: block;
+        margin-top: 0.25rem;
+        color: #999;
+        font-size: 0.8rem;
+    }
+
+    .image-upload {
+        display: flex;
+        gap: 1rem;
+        flex-wrap: wrap;
+        margin-bottom: 1rem;
+    }
+
+    .upload-box {
+        width: 100px;
+        height: 100px;
+        border: 2px dashed #e0e0e0;
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.3s;
+        color: #999;
+    }
+
+    .upload-box:hover {
+        border-color: #5b5bff;
+        background-color: #f9f9ff;
+        color: #5b5bff;
+    }
+
+    .form-actions {
+        display: flex;
+        gap: 1rem;
+    }
+
+    .btn-submit {
+        flex: 1;
+        padding: 0.75rem 1.5rem;
+        background-color: #5b5bff;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: 600;
+        transition: background-color 0.3s;
+    }
+
+    .btn-submit:hover {
+        background-color: #4a4adc;
+    }
+
+    .btn-cancel {
+        padding: 0.75rem 1.5rem;
+        background-color: white;
+        color: #666;
+        border: 1px solid #e0e0e0;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: 600;
+        transition: all 0.3s;
+    }
+
+    .btn-cancel:hover {
+        background-color: #f9f9f9;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 3rem 1rem;
+        grid-column: 1 / -1;
+    }
+
+    .empty-state i {
+        font-size: 3rem;
+        color: #ddd;
+        margin-bottom: 1rem;
+    }
+
+    .empty-state p {
+        color: #999;
+    }
+
+    @media (max-width: 768px) {
+        .feedback-content {
+            grid-template-columns: 1fr;
+        }
+
+        .write-feedback-form {
+            grid-column: 1;
+        }
+    }
+</style>
+
+<div class="feedback-container">
+    <div class="feedback-header">
+        <h2><i class="fas fa-star"></i> Đánh giá</h2>
+    </div>
+
+    <div class="feedback-tabs">
+        <button class="feedback-tab active" onclick="switchTab('all')">Tất cả đánh giá</button>
+        <button class="feedback-tab" onclick="switchTab('write')">Viết đánh giá</button>
+    </div>
+
+    <!-- Tab: All Feedback -->
+    <div id="all-tab" class="feedback-content">
+        <!-- Feedback Card 1 -->
+        <div class="feedback-card">
+            <div class="trip-info">
+                <div class="trip-image">
+                    <i class="fas fa-bus"></i>
+                </div>
+                <div class="trip-details">
+                    <h5>43AB - 123456</h5>
+                    <p>Đà Nẵng - Hà Nội</p>
+                    <p>16/10/2025 08:00</p>
+                </div>
+            </div>
+
+            <div class="rating-display">
+                <div class="stars">
+                    <span class="star">★</span>
+                    <span class="star">★</span>
+                    <span class="star">★</span>
+                    <span class="star">★</span>
+                    <span class="star">★</span>
+                </div>
+                <span class="rating-text">5.0 (255 đánh giá)</span>
+            </div>
+
+            <p class="feedback-text">Xe sạch sẽ, tài xế lịch sự và an toàn. Dịch vụ rất tốt!</p>
+
+            <div class="feedback-author">
+                <div class="author-avatar">T</div>
+                <div>
+                    <strong>Tường Vy</strong><br>
+                    <span style="color: #999;">16/10/2025</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Feedback Card 2 -->
+        <div class="feedback-card">
+            <div class="trip-info">
+                <div class="trip-image">
+                    <i class="fas fa-bus"></i>
+                </div>
+                <div class="trip-details">
+                    <h5>43AB - 123456</h5>
+                    <p>Đà Nẵng - Hà Nội</p>
+                    <p>15/10/2025 08:00</p>
+                </div>
+            </div>
+
+            <div class="rating-display">
+                <div class="stars">
+                    <span class="star">★</span>
+                    <span class="star">★</span>
+                    <span class="star">★</span>
+                    <span class="star">★</span>
+                </div>
+                <span class="rating-text">4.0 (32 đánh giá)</span>
+            </div>
+
+            <p class="feedback-text">Tốt nhưng một chút muộn. Nhân viên rất nhiệt tình.</p>
+
+            <div class="feedback-author">
+                <div class="author-avatar">M</div>
+                <div>
+                    <strong>Minh Quân</strong><br>
+                    <span style="color: #999;">15/10/2025</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Feedback Card 3 -->
+        <div class="feedback-card">
+            <div class="trip-info">
+                <div class="trip-image">
+                    <i class="fas fa-bus"></i>
+                </div>
+                <div class="trip-details">
+                    <h5>43AC - 67890</h5>
+                    <p>Đà Lạt - Hồ Chí Minh</p>
+                    <p>14/10/2025 10:00</p>
+                </div>
+            </div>
+
+            <div class="rating-display">
+                <div class="stars">
+                    <span class="star">★</span>
+                    <span class="star">★</span>
+                    <span class="star">★</span>
+                </div>
+                <span class="rating-text">3.0 (12 đánh giá)</span>
+            </div>
+
+            <p class="feedback-text">Bình thường, ghế hơi cũ nhưng chuyến đi ổn.</p>
+
+            <div class="feedback-author">
+                <div class="author-avatar">H</div>
+                <div>
+                    <strong>Hùng</strong><br>
+                    <span style="color: #999;">14/10/2025</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Feedback Card 4 -->
+        <div class="feedback-card">
+            <div class="trip-info">
+                <div class="trip-image">
+                    <i class="fas fa-bus"></i>
+                </div>
+                <div class="trip-details">
+                    <h5>43AB - 54321</h5>
+                    <p>Đà Nẵng - Huế</p>
+                    <p>12/10/2025 14:30</p>
+                </div>
+            </div>
+
+            <div class="rating-display">
+                <div class="stars">
+                    <span class="star">★</span>
+                    <span class="star">★</span>
+                    <span class="star">★</span>
+                    <span class="star">★</span>
+                    <span class="star">★</span>
+                </div>
+                <span class="rating-text">5.0 (89 đánh giá)</span>
+            </div>
+
+            <p class="feedback-text">Quá tuyệt vời! Sạch sẽ, an toàn và tài xế chuyên nghiệp.</p>
+
+            <div class="feedback-author">
+                <div class="author-avatar">L</div>
+                <div>
+                    <strong>Linh</strong><br>
+                    <span style="color: #999;">12/10/2025</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tab: Write Feedback -->
+    <div id="write-tab" class="feedback-content" style="display: none;">
+        <div class="write-feedback-form">
+            <h3 style="margin-bottom: 1.5rem; color: #1e3a5f;">Viết đánh giá của bạn</h3>
+
+            <div class="form-section">
+                <label>Chọn chuyến đi cần đánh giá</label>
+                <select class="form-group form-control" style="width: 100%; padding: 0.75rem; border-radius: 6px;">
+                    <option value="">-- Chọn chuyến đi --</option>
+                    <option value="1">43AB - 123456 (Đà Nẵng - Hà Nội, 16/10/2025)</option>
+                    <option value="2">43AB - 123456 (Đà Nẵng - Hà Nội, 15/10/2025)</option>
+                    <option value="3">43AC - 67890 (Đà Lạt - Hồ Chí Minh, 14/10/2025)</option>
+                </select>
+            </div>
+
+            <div class="form-section">
+                <label>Đánh giá</label>
+                <div class="star-rating">
+                    <span class="star" onclick="setRating(1)">★</span>
+                    <span class="star" onclick="setRating(2)">★</span>
+                    <span class="star" onclick="setRating(3)">★</span>
+                    <span class="star" onclick="setRating(4)">★</span>
+                    <span class="star" onclick="setRating(5)">★</span>
+                </div>
+                <p id="ratingText" style="margin-top: 0.5rem; color: #999;"></p>
+            </div>
+
+            <div class="form-section">
+                <label>Tiêu đề đánh giá</label>
+                <div class="form-group">
+                    <input type="text" placeholder="Ví dụ: Chuyến đi tuyệt vời, nhân viên rất tốt">
+                </div>
+            </div>
+
+            <div class="form-section">
+                <label>Nội dung đánh giá</label>
+                <div class="form-group">
+                    <textarea placeholder="Chia sẻ trải nghiệm của bạn về chuyến đi..."></textarea>
+                    <small>Tối thiểu 20 ký tự</small>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <label>Hình ảnh (tùy chọn)</label>
+                <div class="image-upload">
+                    <div class="upload-box" onclick="document.getElementById('imageInput').click()">
+                        <div style="text-align: center;">
+                            <i class="fas fa-image" style="font-size: 2rem; margin-bottom: 0.5rem;"></i><br>
+                            Thêm ảnh
+                        </div>
+                    </div>
+                    <input type="file" id="imageInput" multiple accept="image/*" style="display: none;">
+                </div>
+            </div>
+
+            <div class="form-actions">
+                <button class="btn-submit" onclick="submitFeedback()">Gửi đánh giá</button>
+                <button class="btn-cancel" onclick="switchTab('all')">Hủy</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function switchTab(tab) {
+        document.querySelectorAll('.feedback-tab').forEach(btn => btn.classList.remove('active'));
+        event.target.classList.add('active');
+
+        document.getElementById('all-tab').style.display = tab === 'all' ? 'grid' : 'none';
+        document.getElementById('write-tab').style.display = tab === 'write' ? 'grid' : 'none';
+    }
+
+    let selectedRating = 0;
+
+    function setRating(rating) {
+        selectedRating = rating;
+        const stars = document.querySelectorAll('.star-rating .star');
+        stars.forEach((star, index) => {
+            if (index < rating) {
+                star.classList.add('selected');
+            } else {
+                star.classList.remove('selected');
+            }
+        });
+
+        const ratingTexts = ['', 'Rất tệ', 'Không tốt', 'Bình thường', 'Tốt', 'Xuất sắc'];
+        document.getElementById('ratingText').textContent = `Bạn đánh giá: ${ratingTexts[rating]} (${rating}/5)`;
+    }
+
+    function submitFeedback() {
+        alert('Cảm ơn bạn đã gửi đánh giá!');
+        switchTab('all');
+    }
+</script>
+{% endblock %}

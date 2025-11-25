@@ -1,0 +1,34 @@
+{% extends "ticket/base.html" %}
+{% block title %}Kết quả tìm kiếm{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2 class="mb-4">Kết quả tìm kiếm: {{ search_params.from_location }} → {{ search_params.to_location }}</h2>
+
+    {% if no_results %}
+        <p class="text-muted text-center fs-4">Chưa có kết quả</p>
+    {% else %}
+        <div class="row">
+            {% for trip in trips %}
+            <div class="col-md-6 col-lg-4 mb-4">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-body">
+                        <h5 class="card-title text-primary">
+                            {{ trip.departure_location }} → {{ trip.arrival_location }}
+                        </h5>
+                        <p class="card-text">
+                            <strong>Khởi hành:</strong> {{ trip.departure_time|date:"d/m/Y H:i" }}<br>
+                            <strong>Đến nơi:</strong> {{ trip.arrival_time|time:"H:i" }}<br>
+                            <strong>Loại xe:</strong> {{ trip.vehicle_type|capfirst }}<br>
+                            <strong>Giá vé:</strong> <span class="text-danger fw-bold">{{ trip.price|floatformat:0 }}đ</span><br>
+                            <strong>Chỗ trống:</strong> {{ trip.total_seats }}
+                        </p>
+                        <a href="#" class="btn btn-primary w-100">Chọn chuyến</a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

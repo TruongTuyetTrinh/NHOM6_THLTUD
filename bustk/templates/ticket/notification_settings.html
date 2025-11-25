@@ -1,0 +1,332 @@
+{% extends "ticket/base.html" %}
+
+{% block title %}Cài đặt Thông báo - BusTicket{% endblock %}
+
+{% block content %}
+<style>
+    .settings-wrapper {
+        max-width: 1000px;
+        margin: 0 auto;
+        padding: 2rem 1rem;
+    }
+
+    .settings-header {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+
+    .back-btn {
+        background: none;
+        border: none;
+        color: #1e3a5f;
+        font-size: 1.5rem;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+
+    .back-btn:hover {
+        color: #5b5bff;
+    }
+
+    .settings-header h1 {
+        color: #1e3a5f;
+        margin: 0;
+        font-size: 1.8rem;
+    }
+
+    .settings-container {
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: 2rem;
+    }
+
+    .settings-list {
+        display: grid;
+        gap: 1.5rem;
+    }
+
+    .setting-item {
+        background: white;
+        border-radius: 8px;
+        padding: 1.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        transition: all 0.3s;
+    }
+
+    .setting-item:hover {
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+
+    .setting-icon {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        margin-right: 1rem;
+    }
+
+    .setting-icon.trip {
+        background-color: #e3f2fd;
+        color: #2196f3;
+    }
+
+    .setting-icon.schedule {
+        background-color: #fce4ec;
+        color: #e91e63;
+    }
+
+    .setting-icon.discount {
+        background-color: #fff3e0;
+        color: #ff9800;
+    }
+
+    .setting-icon.security {
+        background-color: #ede7f6;
+        color: #9c27b0;
+    }
+
+    .setting-content {
+        flex: 1;
+    }
+
+    .setting-title {
+        font-weight: 700;
+        color: #1e3a5f;
+        margin: 0 0 0.25rem 0;
+        font-size: 0.95rem;
+    }
+
+    .setting-description {
+        color: #999;
+        font-size: 0.85rem;
+        margin: 0;
+    }
+
+    .toggle-switch {
+        position: relative;
+        display: inline-block;
+        width: 50px;
+        height: 26px;
+    }
+
+    .toggle-switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+
+    .toggle-slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: #ccc;
+        transition: 0.4s;
+        border-radius: 26px;
+    }
+
+    .toggle-slider:before {
+        position: absolute;
+        content: "";
+        height: 20px;
+        width: 20px;
+        left: 3px;
+        bottom: 3px;
+        background-color: white;
+        transition: 0.4s;
+        border-radius: 50%;
+    }
+
+    input:checked + .toggle-slider {
+        background-color: #5b5bff;
+    }
+
+    input:checked + .toggle-slider:before {
+        transform: translateX(24px);
+    }
+
+    .notification-methods {
+        background: white;
+        border-radius: 8px;
+        padding: 1.5rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+
+    .notification-methods h3 {
+        color: #1e3a5f;
+        font-weight: 700;
+        margin-bottom: 1rem;
+        font-size: 0.95rem;
+    }
+
+    .method-item {
+        display: flex;
+        align-items: center;
+        padding: 0.75rem 0;
+        border-bottom: 1px solid #e0e0e0;
+    }
+
+    .method-item:last-child {
+        border-bottom: none;
+    }
+
+    .method-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+        margin-right: 1rem;
+        flex-shrink: 0;
+    }
+
+    .method-icon.email {
+        background-color: #e3f2fd;
+        color: #2196f3;
+    }
+
+    .method-icon.sms {
+        background-color: #fff3e0;
+        color: #ff9800;
+    }
+
+    .method-label {
+        font-weight: 600;
+        color: #1e3a5f;
+        font-size: 0.9rem;
+    }
+
+    .method-status {
+        margin-left: auto;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background-color: #4caf50;
+    }
+
+    @media (max-width: 768px) {
+        .settings-container {
+            grid-template-columns: 1fr;
+        }
+
+        .settings-list {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+
+<div class="settings-wrapper">
+    <div class="settings-header">
+        <a href="{% url 'notifications' %}" class="back-btn">
+            <i class="fas fa-arrow-left"></i>
+        </a>
+        <h1>Cài đặt Thông báo</h1>
+    </div>
+
+    <div class="settings-container">
+        <div class="settings-list">
+            <div class="setting-item">
+                <div style="display: flex; align-items: center; flex: 1;">
+                    <div class="setting-icon trip">
+                        <i class="fas fa-bell"></i>
+                    </div>
+                    <div class="setting-content">
+                        <p class="setting-title">Thông báo chuyến đi</p>
+                        <p class="setting-description">Nhận thông tin đặt vé, thay đổi, khởi hành, kết thúc chuyến.</p>
+                    </div>
+                </div>
+                <label class="toggle-switch">
+                    <input type="checkbox" checked>
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+
+            <div class="setting-item">
+                <div style="display: flex; align-items: center; flex: 1;">
+                    <div class="setting-icon schedule">
+                        <i class="fas fa-bus"></i>
+                    </div>
+                    <div class="setting-content">
+                        <p class="setting-title">Lịch trình & thay đổi giờ chạy</p>
+                        <p class="setting-description">Báo khi xe sắp đến, trễ, hoặc hoặc thay đổi tài xế.</p>
+                    </div>
+                </div>
+                <label class="toggle-switch">
+                    <input type="checkbox" checked>
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+
+            <div class="setting-item">
+                <div style="display: flex; align-items: center; flex: 1;">
+                    <div class="setting-icon discount">
+                        <i class="fas fa-gift"></i>
+                    </div>
+                    <div class="setting-content">
+                        <p class="setting-title">Khuyến mãi & ưu đãi</p>
+                        <p class="setting-description">Nhận thông tin giảm giá, mã voucher.</p>
+                    </div>
+                </div>
+                <label class="toggle-switch">
+                    <input type="checkbox" checked>
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+
+            <div class="setting-item">
+                <div style="display: flex; align-items: center; flex: 1;">
+                    <div class="setting-icon security">
+                        <i class="fas fa-lock"></i>
+                    </div>
+                    <div class="setting-content">
+                        <p class="setting-title">Tài khoản & bảo mật</p>
+                        <p class="setting-description">Cảnh báo khi phát hiện đăng nhập lạ, đổi mật khẩu, v.v.</p>
+                    </div>
+                </div>
+                <label class="toggle-switch">
+                    <input type="checkbox" checked>
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+        </div>
+
+        <div class="notification-methods">
+            <h3>Cách nhận thông báo</h3>
+            <div class="method-item">
+                <div class="method-icon email">
+                    <i class="fas fa-envelope"></i>
+                </div>
+                <span class="method-label">Email thông báo</span>
+                <div class="method-status"></div>
+            </div>
+            <div class="method-item">
+                <div class="method-icon sms">
+                    <i class="fas fa-phone"></i>
+                </div>
+                <span class="method-label">SMS / Zalo</span>
+                <div class="method-status"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.querySelectorAll('.toggle-switch input').forEach(toggle => {
+        toggle.addEventListener('change', function() {
+            console.log('Notification setting changed:', this.checked);
+        });
+    });
+</script>
+{% endblock %}

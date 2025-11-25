@@ -1,0 +1,72 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Đăng ký - BusTicket</title>
+    <link rel="stylesheet" href="{% static 'css/register.css' %}">
+</head>
+<body>
+
+<div class="register-container">
+    <h2>Đăng ký tài khoản</h2>
+
+    <div class="error" id="errorMsg"></div>
+    <div class="success" id="successMsg"></div>
+
+    <form id="registerForm">
+        {% csrf_token %}
+        <div class="form-group">
+            <label>Họ và tên</label>
+            <input type="text" id="fullname" name="fullname" required>
+        </div>
+
+        <div class="form-group">
+            <label>Email</label>
+            <input type="email" id="email" name="email" required>
+        </div>
+
+        <div class="form-group">
+            <label>Số điện thoại</label>
+            <input type="tel" id="phone" name="phone" required>
+        </div>
+
+        <div class="form-group">
+            <label>Tên đăng nhập</label>
+            <input type="text" id="username" name="username" required>
+        </div>
+
+        <div class="form-group">
+            <label>Mật khẩu</label>
+            <input type="password" id="password" name="password" required minlength="8">
+        </div>
+
+        <button type="button" id="btnSendOTP">Gửi mã OTP</button>
+
+        <div class="login-link">
+            Bạn đã có tài khoản? <a href="/login/">Đăng nhập</a>
+        </div>
+    </form>
+</div>
+
+<!-- POPUP OTP -->
+<div id="otpModal">
+    <div id="otpBox">
+        <button class="close-btn" id="closeModal">×</button>
+
+        <h3>Nhập mã OTP</h3>
+        <p>Mã đã gửi đến email của bạn</p>
+
+        <div class="modal-msg modal-error" id="modalError"></div>
+        <div class="modal-msg modal-success" id="modalSuccess"></div>
+
+        <input type="text" id="otpInput" placeholder="Nhập 6 số OTP" maxlength="6"
+               class="otp-input">
+
+        <button id="btnVerifyOTP" class="btn-verify">Xác nhận</button>
+    </div>
+</div>
+
+<script src="{% static 'js/register.js' %}"></script>
+</body>
+</html>

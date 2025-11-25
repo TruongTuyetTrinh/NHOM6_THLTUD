@@ -1,0 +1,290 @@
+{% extends "ticket/base.html" %}
+{% load static humanize %}
+
+{% block title %}Vé của tôi - DaNaGO{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/my_tickets.css' %}">
+<link rel="stylesheet" href="{% static 'css/review.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="my-tickets-container">
+    {% if not has_tickets %}
+    <!-- Trạng thái chưa có vé -->
+    <div class="empty-state">
+        <div class="empty-state-icon">
+            <svg width="80" height="80" viewBox="0 0 80 80" fill="none">
+                <circle cx="40" cy="40" r="35" stroke="#E5E7EB" stroke-width="2"/>
+                <path d="M25 40C25 36.134 28.134 33 32 33H48C51.866 33 55 36.134 55 40V55C55 58.866 51.866 62 48 62H32C28.134 62 25 58.866 25 55V40Z"
+                      stroke="#9CA3AF" stroke-width="2" fill="none"/>
+                <path d="M35 45H45M35 52H45"
+                      stroke="#9CA3AF" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+        </div>
+        <h2 class="empty-state-title">Bạn chưa đặt vé</h2>
+        <p class="empty-state-desc">
+            Bạn chưa có vé nào. Hãy đặt vé ngay để bắt đầu hành trình của bạn.
+        </p>
+        <a href="{% url 'index' %}" class="btn btn-primary">Đặt vé ngay</a>
+    </div>
+
+    {% else %}
+
+    <!-- Header -->
+    <div class="tickets-header">
+        <h1 class="tickets-title">Vé của tôi</h1>
+        <p class="tickets-subtitle">Quản lý tất cả các vé xe bạn đã đặt tại đây</p>
+    </div>
+
+    <!-- Tabs -->
+    <div class="ticket-tabs">
+        <a href="{% url 'my_tickets' %}?tab=upcoming"
+           class="tab-button {% if current_tab == 'upcoming' %}active{% endif %}">
+            Sắp đi
+            <span class="tab-count">{{ upcoming_count }}</span>
+        </a>
+        <a href="{% url 'my_tickets' %}?tab=completed"
+           class="tab-button {% if current_tab == 'completed' %}active{% endif %}">
+            Đã đi
+            <span class="tab-count">{{ completed_count }}</span>
+        </a>
+        <a href="{% url 'my_tickets' %}?tab=cancelled"
+           class="tab-button {% if current_tab == 'cancelled' %}active{% endif %}">
+            Đã hủy
+            <span class="tab-count">{{ cancelled_count }}</span>
+        </a>
+    </div>
+
+    <!-- Danh sách vé -->
+    <div class="ticket-list">
+        {% if tickets %}
+            {% for ticket in tickets %}
+            <div class="ticket-card">
+                <!-- Header vé -->
+                <div class="ticket-header">
+                    <div class="ticket-code-info">
+                        <h3 class="ticket-code">
+                            Vé #{{ ticket.id }}
+                            {% if ticket.trip and ticket.trip.vehicle_type %}
+                                - {{ ticket.trip.vehicle_type|upper }}
+                            {% endif %}
+                        </h3>
+                        <p class="ticket-ref">
+                            Mã đặt chỗ: {{ ticket.id }}
+                            {% if ticket.payment_order and ticket.payment_order.ticket_code %}
+                                • Mã thanh toán: {{ ticket.payment_order.ticket_code }}
+                            {% endif %}
+                        </p>
+                    </div>
+                    <span class="ticket-status ticket-status-{{ ticket.status }}">
+                        {% if ticket.status == 'upcoming' %}
+                            Sắp đi
+                        {% elif ticket.status == 'completed' %}
+                            Đã đi
+                        {% elif ticket.status == 'cancelled' %}
+                            Đã hủy
+                        {% else %}
+                            {{ ticket.status }}
+                        {% endif %}
+                    </span>
+                </div>
+
+                <!-- Hàng 1: Ngày đi, Tuyến đường, Thời gian -->
+                <div class="ticket-grid">
+                    <div class="ticket-grid-item">
+                        <label class="ticket-label">Ngày đi</label>
+                        <p class="ticket-value">
+                            {% if ticket.payment_order and ticket.payment_order.depart_date %}
+                                {{ ticket.payment_order.depart_date }}
+                            {% elif ticket.trip and ticket.trip.departure_time %}
+                                {{ ticket.trip.departure_time|date:"d/m/Y" }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </p>
+                    </div>
+
+                    <div class="ticket-grid-item">
+                        <label class="ticket-label">Tuyến đường</label>
+                        <p class="ticket-value">
+                            {% if ticket.payment_order and ticket.payment_order.from_location %}
+                                {{ ticket.payment_order.from_location }} → {{ ticket.payment_order.to_location }}
+                            {% elif ticket.trip %}
+                                {{ ticket.trip.departure_location }} → {{ ticket.trip.arrival_location }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </p>
+                    </div>
+
+                    <div class="ticket-grid-item">
+                        <label class="ticket-label">Giờ khởi hành</label>
+                        <p class="ticket-value">
+                            {% if ticket.payment_order and ticket.payment_order.depart_time %}
+                                {{ ticket.payment_order.depart_time }}
+                            {% elif ticket.trip and ticket.trip.departure_time %}
+                                {{ ticket.trip.departure_time|date:"H:i" }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Hàng 2: Hành khách, Ghế, Giá -->
+                <div class="ticket-grid">
+                    <div class="ticket-grid-item">
+                        <label class="ticket-label">Hành khách</label>
+                        <p class="ticket-value">
+                            {{ user.get_full_name|default:user.username }}
+                        </p>
+                    </div>
+
+                    <div class="ticket-grid-item">
+                        <label class="ticket-label">Số ghế</label>
+                        <p class="ticket-value">{{ ticket.seat_number }}</p>
+                    </div>
+
+                    <div class="ticket-grid-item">
+                        <label class="ticket-label">Giá vé</label>
+                        <p class="ticket-value">
+                            {% if ticket.trip %}
+                                {{ ticket.trip.price|floatformat:0|intcomma }}đ
+                            {% elif ticket.payment_order %}
+                                {% if ticket.payment_order.price_each %}
+                                    {{ ticket.payment_order.price_each|intcomma }}đ
+                                {% else %}
+                                    {{ ticket.payment_order.amount|intcomma }}đ
+                                {% endif %}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+    <!-- Hàng 3: QR (nếu có) -->
+                {% if ticket.status == "upcoming" or ticket.status == "completed" %}
+                <div class="ticket-qr-row">
+                    <label class="ticket-label">Mã QR check-in</label>
+                    {% if ticket.payment_order and ticket.payment_order.ticket_code %}
+                    <div class="ticket-qr-box">
+                        <img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data={{ ticket.payment_order.ticket_code }}" alt="QR check-in">
+                        <span class="ticket-qr-note"> Sử dụng mã QR này khi làm thủ tục lên xe. </span>
+                    </div> {% else %} <p class="ticket-value text-muted"> (Không tìm thấy mã thanh toán cho vé này) </p>
+                    {% endif %}
+                </div>
+                {% endif %}
+                <!-- Hàng 3: Hành động theo trạng thái -->
+                <div class="ticket-actions">
+                    {% if ticket.status == 'upcoming' %}
+                        <!-- Vé SẮP ĐI: QR + tải vé + hủy nếu đủ điều kiện -->
+<!--                        <button type="button"-->
+<!--                                class="btn btn-outline-primary btn-sm js-show-ticket-qr"-->
+<!--                                data-ticket-id="{{ ticket.id }}"-->
+<!--                                {% if ticket.payment_order and ticket.payment_order.ticket_code %}-->
+<!--                                data-ticket-code="{{ ticket.payment_order.ticket_code }}"-->
+<!--                                {% endif %}>-->
+<!--                            Hiển thị QR vé-->
+<!--                        </button>-->
+
+                        <a href="{% url 'download_ticket' ticket.id %}"
+                           class="btn btn-secondary btn-sm">
+                            Tải vé (PDF)
+                        </a>
+
+                        <button type="button"
+                                class="btn btn-danger btn-sm js-cancel-ticket"
+                                data-ticket-id="{{ ticket.id }}"
+                                data-cancel-url="/ticket/{{ ticket.id }}/cancel/">
+                            Hủy vé
+                        </button>
+
+                    {% elif ticket.status == 'completed' %}
+                        <!-- Vé ĐÃ ĐI: tải vé + đánh giá + đặt lại -->
+                        <a href="{% url 'download_ticket' ticket.id %}"
+                           class="btn btn-secondary btn-sm">
+                            Tải vé (PDF)
+                        </a>
+
+                        <button type="button"
+                                class="btn btn-primary btn-sm"
+                                onclick="openReviewModal({{ ticket.id }})">
+                            Đánh giá chuyến đi
+                        </button>
+
+                        {% if ticket.payment_order and ticket.payment_order.from_location %}
+                            <a href="{% url 'index' %}?from={{ ticket.payment_order.from_location|urlencode }}&to={{ ticket.payment_order.to_location|urlencode }}"
+                               class="btn btn-outline-primary btn-sm">
+                                Đặt lại
+                            </a>
+                        {% elif ticket.trip %}
+                            <a href="{% url 'index' %}?from={{ ticket.trip.departure_location|urlencode }}&to={{ ticket.trip.arrival_location|urlencode }}"
+                               class="btn btn-outline-primary btn-sm">
+                                Đặt lại
+                            </a>
+                        {% endif %}
+
+                    {% elif ticket.status == 'cancelled' %}
+                        <!-- Vé ĐÃ HỦY: chỉ đặt lại -->
+                        {% if ticket.payment_order and ticket.payment_order.from_location %}
+                            <a href="{% url 'index' %}?from={{ ticket.payment_order.from_location|urlencode }}&to={{ ticket.payment_order.to_location|urlencode }}"
+                               class="btn btn-outline-primary btn-sm">
+                                Đặt lại
+                            </a>
+                        {% elif ticket.trip %}
+                            <a href="{% url 'index' %}?from={{ ticket.trip.departure_location|urlencode }}&to={{ ticket.trip.arrival_location|urlencode }}"
+                               class="btn btn-outline-primary btn-sm">
+                                Đặt lại
+                            </a>
+                        {% endif %}
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="empty-tab">
+                <p>Không có vé nào trong danh mục này</p>
+            </div>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+
+<!-- Modal đánh giá -->
+<div id="review-modal" class="review-modal">
+    <div class="review-box">
+        <h3>Đánh giá chuyến đi</h3>
+
+        <input type="hidden" id="review-ticket-id">
+
+        <label>Điểm đánh giá</label>
+        <select id="review-rating">
+            <option value="5">⭐⭐⭐⭐⭐</option>
+            <option value="4">⭐⭐⭐⭐</option>
+            <option value="3">⭐⭐⭐</option>
+            <option value="2">⭐⭐</option>
+            <option value="1">⭐</option>
+        </select>
+
+        <label>Tiêu đề</label>
+        <input type="text" id="review-title" placeholder="Ví dụ: Chuyến đi rất thoải mái">
+
+        <label>Nội dung</label>
+        <textarea id="review-content" placeholder="Chia sẻ trải nghiệm của bạn..."></textarea>
+
+        <label>Hình ảnh (tùy chọn)</label>
+        <input type="file" id="review-image">
+
+        <div class="review-actions">
+            <button onclick="submitReview()" class="btn btn-primary">Gửi đánh giá</button>
+            <button onclick="closeReviewModal()" class="btn btn-secondary">Hủy</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/my_tickets.js' %}"></script>
+<script src="{% static 'js/review.js' %}"></script>
+{% endblock %}

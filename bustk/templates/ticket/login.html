@@ -1,0 +1,42 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Đăng Nhập - BusTicket</title>
+    <link rel="stylesheet" href="{% static 'css/login.css' %}">
+</head>
+<body>
+
+<div class="auth-container">
+    <div class="auth-left">
+        <img src="{% static 'img/img_1.png' %}" alt="BusTicket">
+    </div>
+
+    <div class="auth-right">
+        <form class="auth-form" id="loginForm" method="post">
+            {% csrf_token %}
+            <h2>Đăng nhập</h2>
+            <div class="error" id="errorMsg"></div>
+
+            <div class="form-group">
+                <label for="username">Tên đăng nhập</label>
+                <input type="text" name="username" id="username" required>
+            </div>
+            <div class="form-group">
+                <label for="password">Mật khẩu</label>
+                <input type="password" name="password" id="password" required>
+            </div>
+
+            <button type="submit">Đăng nhập</button>
+            <div class="auth-footer">
+                Chưa có tài khoản? <a href="/register/">Đăng ký ngay</a>
+                <!-- Tốt hơn: dùng {% url 'register' %} nếu bạn có đặt name cho url -->
+            </div>
+        </form>
+    </div>
+</div>
+
+<script src="{% static 'js/login.js' %}"></script>
+</body>
+</html>

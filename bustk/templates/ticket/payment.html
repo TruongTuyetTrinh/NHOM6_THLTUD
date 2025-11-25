@@ -1,0 +1,106 @@
+{% extends "ticket/base.html" %}
+{% load static humanize %}
+
+{% block title %}Thanh toán - DaNaGO{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/payment.css' %}">
+{% endblock %}
+
+{% block content %}
+
+<!-- Config cho JS -->
+<div id="payment-config"
+     data-expires-at="{{ expires_at }}"
+     data-status-url="{% url 'payment_status' order.ticket_code %}"
+     data-my-tickets-url="{% url 'my_tickets' %}">
+</div>
+
+<div class="payment-container">
+  <div class="payment-left">
+      <h3>Thanh toán bằng VietQR</h3>
+      <p>Vui lòng quét mã QR bằng ứng dụng ngân hàng trên điện thoại của bạn.</p>
+      <p>Mã QR chỉ có hiệu lực <strong>5 phút</strong>.</p>
+
+      <div class="qr-box">
+          <!-- overlay che QR khi hết hạn -->
+          <div id="qr-expired-overlay" class="qr-expired-overlay">
+              <div class="qr-overlay-content">
+                  <h4>Mã QR đã hết hiệu lực</h4>
+                  <p>Vui lòng quay lại trang đặt vé để tạo mã mới.</p>
+                  <p class="qr-overlay-note">Bạn sẽ được chuyển trang tự động trong 30 giây...</p>
+              </div>
+          </div>
+
+          <img src="{{ qr_url }}" alt="VietQR">
+          <div class="amount-text">
+              Tổng tiền: {{ total_amount|intcomma }} đ
+          </div>
+          <div class="countdown">
+              Thời gian còn lại: <span id="countdown">05:00</span>
+          </div>
+          <div id="status-box" class="status-box status-pending">
+              Đang chờ bạn thanh toán...
+          </div>
+      </div>
+  </div>
+
+  <div class="payment-right">
+      <h6 class="payment-right-title">Thông tin đơn</h6>
+
+      <div class="info-row">
+          <span class="info-label">Mã giao dịch</span>
+          <span class="info-value">{{ order.ticket_code }}</span>
+      </div>
+
+      <div class="info-row">
+          <span class="info-label">Tuyến</span>
+          <span class="info-value">
+              {{ from_location }} → {{ to_location }}
+          </span>
+      </div>
+
+      <div class="info-row">
+          <span class="info-label">Khởi hành</span>
+          <span class="info-value">{{ departure_str }}</span>
+      </div>
+
+      <div class="info-row">
+          <span class="info-label">Ghế</span>
+          <span class="info-value">{{ order.seats }}</span>
+      </div>
+
+      <div class="info-row info-row-total">
+          <span class="info-label">Số tiền</span>
+          <span class="info-value">{{ total_amount|intcomma }} đ</span>
+      </div>
+
+      <a href="javascript:history.back();" class="back-link">
+          ← Quay lại chọn ghế
+      </a>
+  </div>
+</div>
+
+<!-- POPUP Thanh toán thành công -->
+<div id="payment-success-modal" class="payment-success-modal" style="display:none;">
+  <div class="payment-success-box">
+      <h3>🎉 Thanh toán thành công!</h3>
+      <p>Bạn đã đặt vé thành công.</p>
+      <p>Bạn có thể xem chi tiết tại <strong>Vé của tôi</strong>.</p>
+
+      <div class="popup-actions">
+          <button id="payment-success-view-btn" class="btn btn-success">
+              Xem vé của tôi
+          </button>
+          <button id="payment-success-close-btn" class="btn btn-outline-secondary">
+              Đóng
+          </button>
+      </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/payment.js' %}"></script>
+{% endblock %}

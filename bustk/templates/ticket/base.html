@@ -1,0 +1,580 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}DaNaGo - Đặt vé xe khách online{% endblock %}</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-blue: #1c2b3d;
+            --accent-orange: #ff6b35;
+            --light-gray: #f8f9fa;
+            --dark-text: #2c3e50;
+            --border-gray: #e0e0e0;
+            --footer-text: #b0c4de;
+            --footer-title: white;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--light-gray);
+            color: var(--dark-text);
+        }
+
+        /* Navbar */
+        .navbar {
+            background-color: var(--primary-blue) !important;
+            padding: 0.75rem 0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+
+        .navbar-brand {
+            font-size: 1.6rem;
+            font-weight: bold;
+            color: white !important;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+        }
+
+        .navbar-brand img {
+            height: 30px;
+            width: auto;
+            object-fit: contain;
+        }
+
+        /* Center Nav Links */
+        .nav-center {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 2.5rem;
+        }
+
+        .nav-center .nav-link {
+            color: white !important;
+            font-weight: 500;
+            font-size: 1.05rem;
+            position: relative;
+            padding: 0.5rem 0 !important;
+            transition: color 0.3s ease;
+        }
+
+        .nav-center .nav-link:hover {
+            color: var(--accent-orange) !important;
+        }
+
+        .nav-center .nav-link.active {
+            color: white !important;
+            font-weight: 600;
+        }
+
+        .nav-center .nav-link.active::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background-color: white;
+            border-radius: 2px;
+        }
+
+        /* User Avatar */
+        .user-avatar {
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            background-color: var(--accent-orange);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+
+        .user-avatar:hover {
+            transform: scale(1.12);
+        }
+
+        .user-avatar i {
+            font-size: 1rem;
+        }
+
+        /* Dropdown Menu */
+        .dropdown-menu-custom {
+            display: none;
+            position: absolute;
+            top: 60px;
+            right: 0;
+            background-color: white;
+            border: 1px solid var(--border-gray);
+            border-radius: 10px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.18);
+            min-width: 280px;
+            z-index: 1050;
+            overflow: hidden;
+        }
+
+        .dropdown-menu-custom.show {
+            display: block;
+            animation: slideDown 0.35s ease-out;
+        }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .user-info-header {
+            padding: 1.2rem;
+            background: linear-gradient(135deg, #1e3a5f, #2c5282);
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .user-info-header .avatar {
+            width: 55px;
+            height: 55px;
+            border-radius: 50%;
+            background-color: var(--accent-orange);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.6rem;
+            flex-shrink: 0;
+        }
+
+        .user-info-header .info .name {
+            font-weight: 600;
+            font-size: 1.1rem;
+            margin: 0;
+        }
+
+        .user-info-header .info .email {
+            font-size: 0.85rem;
+            opacity: 0.9;
+            margin: 0;
+        }
+
+        .dropdown-menu-item {
+            padding: 0.85rem 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: var(--dark-text);
+            text-decoration: none;
+            font-size: 0.98rem;
+            border: none;
+            width: 100%;
+            text-align: left;
+            background: none;
+        }
+
+        .dropdown-menu-item:hover {
+            background-color: #f1f5f9;
+            color: var(--primary-blue);
+        }
+
+        .dropdown-menu-item i {
+            width: 22px;
+            text-align: center;
+            color: var(--primary-blue);
+            font-size: 1.1rem;
+        }
+
+        .dropdown-menu-item.logout {
+            border-top: 1px solid var(--border-gray);
+            color: #e53e3e;
+            margin-top: 0.5rem;
+        }
+
+        .dropdown-menu-item.logout i {
+            color: #e53e3e;
+        }
+
+        .dropdown-menu-item.logout:hover {
+            background-color: #fff5f5;
+        }
+
+        /* Footer Styling */
+        footer {
+            background-color: var(--primary-blue);
+            color: white;
+            padding: 3rem 0 1.5rem;
+            margin-top: 4rem;
+            font-size: 0.95rem;
+        }
+
+        .footer-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 3rem;
+        }
+
+        .footer-left {
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+
+        .footer-section {
+            display: flex;
+            flex-direction: column;
+            margin-top:0.5cm;
+        }
+
+
+
+        /* Section titles: uppercase, normal weight, orange color */
+        .footer-section h5 {
+            color: var(--footer-title);
+            font-weight: normal;
+            margin-bottom: 0.3rem;
+            font-size: 0.95rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .footer-section p {
+            margin-bottom: 0.5rem;
+            color: var(--footer-text);
+            line-height: 1.6;
+            font-size: 0.9rem;
+        }
+
+        .footer-section a {
+            color: var(--accent-orange);
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+
+        .footer-section a:hover {
+            color: white;
+        }
+
+        .company-info {
+            display: flex;
+            flex-direction: column;
+            gap: 1.3rem;
+            margin-top:0.3cm;
+        }
+
+        .company-info p {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.8rem;
+            margin-bottom: 0;
+        }
+
+        .company-info p i {
+            margin-top: 2px;
+            flex-shrink: 0;
+        }
+
+        /* Address text: gray color */
+        .company-info p.address {
+            color: #a0a0a0;
+        }
+
+        .company-info p.address a {
+            color: #a0a0a0;
+        }
+
+        /* Email: red color */
+        .company-info p.email a {
+            color: #ff4444;
+        }
+
+        /* Phone and Fax on same row with orange color */
+        .phone-fax-container {
+            display: flex;
+            gap: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .phone-fax-container p {
+            margin-bottom: 0;
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .phone-fax-container p a {
+            color: #ff8c00;
+        }
+
+        .hotline-number {
+            font-size: 2rem !important;
+            font-weight: bold !important;
+            color: red !important;
+
+        }
+
+        .footer-logo {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            margin-bottom: 0.8rem;
+        }
+
+        .footer-logo img {
+            height: 20px;
+            width: auto;
+            object-fit: contain;
+        }
+
+        .footer-logo-text {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: white;
+        }
+
+        .social-links {
+            display: flex;
+            gap: 1rem;
+            margin-top: 0.5rem;
+        }
+
+        /* Social links with brand colors - Facebook blue, YouTube red */
+        .social-links a {
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            color: white;
+            font-size: 1rem;
+            transition: all 0.3s;
+            text-decoration: none;
+        }
+
+        .social-links a.facebook {
+            background-color: #1877f2;
+        }
+
+        .social-links a.facebook:hover {
+            background-color: #0a66c2;
+            transform: translateY(-3px);
+        }
+
+        .social-links a.youtube {
+            background-color: #ff0000;
+        }
+
+        .social-links a.youtube:hover {
+            background-color: #cc0000;
+            transform: translateY(-3px);
+        }
+
+        .footer-bottom {
+            border-top: 1px solid rgba(255,255,255,0.15);
+            margin-top: 2rem;
+            padding-top: 1.2rem;
+            text-align: center;
+            font-size: 0.85rem;
+            color: #94a3b8;
+        }
+
+        .footer-bottom a {
+            color: #94a3b8;
+            text-decoration: none;
+        }
+
+        .footer-bottom a:hover {
+            color: var(--accent-orange);
+        }
+
+        main {
+            min-height: calc(100vh - 240px);
+        }
+
+        .container-main {
+            margin-top: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        @media (max-width: 768px) {
+            .footer-container {
+                grid-template-columns: 1fr;
+                gap: 2rem;
+            }
+
+            .phone-fax-container {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+
+            .hotline-number {
+                font-size: 1.5rem;
+            }
+        }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg">
+        <div class="container-fluid px-4 px-lg-5">
+            <a class="navbar-brand" href="/">
+                <img src="{% static 'img/img.png' %}" alt="DaNaGo Logo" style="height: 25px; width: auto;"> DaNaGo
+            </a>
+
+            <!-- Center Navigation Links -->
+            <div class="nav-center">
+                <a class="nav-link {% if request.resolver_match.url_name == 'index' %}active{% endif %}" href="/">Trang chủ</a>
+                <a class="nav-link {% if request.resolver_match.url_name == 'schedules' %}active{% endif %}" href="/schedules">Lịch trình</a>
+                <a class="nav-link {% if request.resolver_match.url_name == 'my_tickets' %}active{% endif %}" href="/my-tickets">Vé của tôi</a>
+            </div>
+
+            <!-- User Avatar -->
+            <div style="position: relative;">
+                <div class="user-avatar" onclick="toggleUserMenu(event)">
+                    <i class="fas fa-user"></i>
+                </div>
+                <div class="dropdown-menu-custom" id="userMenu">
+                    <div class="user-info-header">
+                        <div class="avatar">
+                            {{ user.username|slice:":1"|upper }}
+                        </div>
+                        <div class="info">
+                            <p class="name">
+                                {% if user.customuser.role == 'admin' %}
+                                    Admin
+                                {% else %}
+                                    {{ user.username }}
+                                {% endif %}
+                            </p>
+                            <p class="email">{{ user.email }}</p>
+                        </div>
+                    </div>
+                    <a href="{% url 'profile_settings' %}" class="dropdown-menu-item">
+                        <i class="fas fa-user-circle"></i>
+                        <span>Thông tin tài khoản</span>
+                    </a>
+                    <a href="/messages" class="dropdown-menu-item">
+                        <i class="fas fa-comment-dots"></i>
+                        <span>Tin nhắn</span>
+                    </a>
+                    <a href="/feedback" class="dropdown-menu-item">
+                        <i class="fas fa-star"></i>
+                        <span>Đánh giá</span>
+                    </a>
+                    <a href="/notifications" class="dropdown-menu-item">
+                        <i class="fas fa-bell"></i>
+                        <span>Thông báo</span>
+                    </a>
+                    <button class="dropdown-menu-item logout" onclick="logout()">
+                        <i class="fas fa-sign-out-alt"></i>
+                        <span>Đăng xuất</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="container-main">
+        <div class="container">
+            {% block content %}{% endblock %}
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="footer-container">
+                <!-- Left Column -->
+                <div class="footer-left">
+                    <!-- Logo & Description -->
+                    <div class="footer-section">
+                        <div class="footer-logo">
+                            <img src="{% static 'img/img.png' %}" alt="DaNaGo Logo" style="height: 25px; width: auto;">
+                            <span class="footer-logo-text">DANAGO</span>
+                        </div>
+                        <p>Đối tác đáng tin cậy cho những chuyến đi thoải mái
+                            và an toàn trên khắp đất nước.</p>
+                    </div>
+
+                    <!-- Hotline -->
+                    <div class="footer-section">
+                        <h5>TRUNG TÂM TỔNG ĐÀI & CSKH</h5>
+                        <p class="hotline-number">1900 6067</p>
+                    </div>
+                </div>
+
+                <!-- Right Column -->
+                <div>
+                    <!-- Company Info -->
+                    <div class="footer-section">
+                        <h5>CÔNG TY CỔ PHẦN XE KHÁCH DANAGO</h5>
+                        <div class="company-info">
+                            <p class="address"><i class="fas fa-map-marker-alt"></i> <span>Địa chỉ: 348 Tôn Đức Thắng, Liên Chiểu, Đà Nẵng</span></p>
+                            <p class="email"><i class="fas fa-envelope"></i> <span>Email: <a href="mailto:hotro@danago.vn">hotro@danago.vn</a></span></p>
+                            <div class="phone-fax-container">
+                                <p><i class="fas fa-phone"></i> <span>Điện thoại: <a href="tel:02838386852">02838386852</a></span></p>
+                                <p><i class="fas fa-fax"></i> <span>Fax: <a href="tel:02838386853">02838386853</a></span></p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Social Links -->
+                    <div class="footer-section">
+                        <h5>KẾT NỐI CHÚNG TÔI</h5>
+                        <div class="social-links">
+                            <a href="#" title="Facebook" class="facebook"><i class="fab fa-facebook-f"></i></a>
+                            <a href="#" title="YouTube" class="youtube"><i class="fab fa-youtube"></i></a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="footer-bottom">
+                <p>&copy; 2025 DaNaGo. Bảo lưu mọi quyền.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function toggleUserMenu(event) {
+            event.stopPropagation();
+            const menu = document.getElementById('userMenu');
+            menu.classList.toggle('show');
+        }
+
+        document.addEventListener('click', function(e) {
+            const menu = document.getElementById('userMenu');
+            if (menu && !e.target.closest('.user-avatar') && !e.target.closest('.dropdown-menu-custom')) {
+                menu.classList.remove('show');
+            }
+        });
+
+        function logout() {
+            if (confirm('Bạn có chắc chắn muốn đăng xuất?')) {
+                window.location.href = '{% url "logout" %}';
+            }
+        }
+    </script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

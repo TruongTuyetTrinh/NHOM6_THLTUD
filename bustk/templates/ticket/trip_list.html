@@ -1,0 +1,103 @@
+{% extends "ticket/base.html" %}
+{% load static humanize %}
+
+{% block title %}Lịch trình - DaNaGO{% endblock %}
+
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="stylesheet" href="{% static 'css/trip_list.css' %}">
+{% endblock %}
+
+{% block content %}
+
+<!-- Search Section -->
+<div class="search-section">
+    <form method="get" class="search-box">
+        <input type="text" class="search-input" name="from"
+               placeholder="Nhập điểm đi"
+               value="{{ from_q }}">
+        <button type="button" class="search-swap" onclick="swapLocations()">
+            <i class="fas fa-exchange-alt"></i>
+        </button>
+        <input type="text" class="search-input" name="to"
+               placeholder="Nhập điểm đến"
+               value="{{ to_q }}">
+        <button type="submit" class="search-btn">
+            <i class="fas fa-search"></i> Tìm
+        </button>
+    </form>
+
+    <!-- Filter Tabs (hiện tại chỉ để giao diện, sau này có thể thêm JS filter) -->
+    <div class="filter-tabs">
+        <button type="button" class="filter-tab active">Tuyến xe</button>
+        <button type="button" class="filter-tab">Loại xe</button>
+        <button type="button" class="filter-tab">Quãng đường</button>
+        <button type="button" class="filter-tab">Thời gian hành trình</button>
+        <button type="button" class="filter-tab">Giá vé</button>
+    </div>
+</div>
+
+<!-- Table -->
+<div class="table-container">
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 20%;">Tuyến xe</th>
+                <th style="width: 12%;">Loại xe</th>
+                <th style="width: 15%;">Thời gian</th>
+                <th style="width: 12%;">Giá vé</th>
+                <th style="width: 12%;">Chỗ trống</th>
+                <th style="width: 15%;">Giờ khởi hành</th>
+                <th style="width: 14%;">Hành động</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for trip in trips %}
+            <tr>
+                <td class="route-name">
+                    {{ trip.departure_location }} ⇄ {{ trip.arrival_location }}
+                </td>
+                <td>
+                    {% if trip.vehicle_type == 'limousine' %}
+                        Limousine
+                    {% elif trip.vehicle_type == 'giuong' %}
+                        Giường
+                    {% else %}
+                        {{ trip.get_vehicle_type_display }}
+                    {% endif %}
+                </td>
+                <td>{{ trip.duration_display }}</td>
+                <td>{{ trip.price|intcomma }}đ</td>
+                <td>{{ trip.available_seats }}</td>
+                <td>{{ trip.departure_time|date:"d/m/Y H:i" }}</td>
+
+                <td>
+    <a class="book-btn"
+       href="{% url 'seat_selection' %}?id={{ trip.id }}
+            &from={{ trip.departure_location|urlencode }}
+            &to={{ trip.arrival_location|urlencode }}
+            &date={{ trip.departure_time|date:'d-m' }}
+            &time={{ trip.departure_time|date:'H:i' }}
+            &price={{ trip.price|floatformat:0 }}">
+        Đặt vé
+    </a>
+</td>
+
+            </tr>
+        {% empty %}
+            <tr>
+                <td colspan="7" class="text-center text-muted">
+                    Không tìm thấy chuyến xe phù hợp (chỉ hiển thị các chuyến còn khởi hành sau ít nhất 40 phút).
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/trip_list.js' %}"></script>
+{% endblock %}

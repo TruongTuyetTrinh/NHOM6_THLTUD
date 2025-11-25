@@ -1,0 +1,278 @@
+{% extends "ticket/base.html" %}
+{% load static %}
+
+{% block title %} Trang Chủ - Đặt Vé Xe Buýt Online {% endblock %}
+
+{% block extra_css %}
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+          rel="stylesheet"
+          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
+          crossorigin="anonymous">
+
+    <!-- Select2 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
+
+    <!-- CSS của trang chủ -->
+    <link rel="stylesheet" href="{% static 'css/index.css' %}">
+{% endblock %}
+
+{% block content %}
+<!-- Hero Banner -->
+<div class="hero-banner">
+    <img src="{% static 'img/bia.jpg' %}" alt="Banner xe buýt" class="hero-img">
+</div>
+
+<div class="container mt-5">
+    <!-- Search Form -->
+    <div class="search-container">
+        <div class="search-form">
+            <!-- Chọn loại chuyến -->
+            <div class="trip-type-selector">
+                <div class="form-check trip-type">
+                    <input class="form-check-input" type="radio" name="trip_type" id="one_way" value="one_way" checked>
+                    <label class="form-check-label" for="one_way">
+                        <i class="fas fa-arrow-right"></i> Một chiều
+                    </label>
+                </div>
+                <div class="form-check trip-type">
+                    <input class="form-check-input" type="radio" name="trip_type" id="round_trip" value="round_trip">
+                    <label class="form-check-label" for="round_trip">
+                        <i class="fas fa-exchange-alt"></i> Khứ hồi
+                    </label>
+                </div>
+            </div>
+
+            <!-- Form tìm chuyến -->
+            <form method="GET" action="{% url 'search_trips' %}">
+                <div class="row g-3 align-items-end mb-3" id="input-row">
+                    <!-- Điểm đi -->
+                    <div class="col-lg-3 col-md-6">
+                        <label for="from_location" class="form-label">Điểm đi</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-map-marker-alt"></i></span>
+                            <select class="form-control select2" id="from_location" name="from_location" required>
+                                <option value="">Chọn tỉnh/thành</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Điểm đến -->
+                    <div class="col-lg-3 col-md-6">
+                        <label for="to_location" class="form-label">Điểm đến</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-map-marker-alt"></i></span>
+                            <select class="form-control select2" id="to_location" name="to_location" required>
+                                <option value="">Chọn tỉnh/thành</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Ngày đi -->
+                    <div class="col-lg-2 col-md-4">
+                        <label for="departure_date" class="form-label">Ngày đi</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-calendar-alt"></i></span>
+                            <input type="date" class="form-control" id="departure_date" name="departure_date" required>
+                        </div>
+                    </div>
+
+                    <!-- Ngày về (ẩn mặc định) -->
+                    <div class="col-lg-2 col-md-4" id="return_date_group" style="display: none;">
+                        <label for="return_date" class="form-label">Ngày về</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-calendar-alt"></i></span>
+                            <input type="date" class="form-control" id="return_date" name="return_date">
+                        </div>
+                    </div>
+
+                    <!-- Số vé -->
+                    <div class="col-lg-2 col-md-4">
+                        <label for="passengers" class="form-label">Số vé</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-users"></i></span>
+                            <input type="number" class="form-control" id="passengers" name="passengers"
+                                   min="1" max="10" value="1" required>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Nút tìm chuyến -->
+                <div class="d-flex justify-content-center">
+                    <button type="submit" class="btn btn-search btn-lg">
+                        <i class="fas fa-search"></i> Tìm chuyến xe
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Kết quả tìm kiếm -->
+    <div id="search-results-container" class="results-section mt-4" style="display: none;">
+        <div class="results-toolbar d-flex flex-wrap justify-content-between align-items-start gap-3 mb-3">
+            <div>
+                <span class="results-label text-uppercase text-muted fw-semibold">Kết quả tìm kiếm</span>
+                <h3 class="results-route mb-1" id="search-route-title">Đà Nẵng → Đà Lạt</h3>
+                <div class="results-meta text-muted" id="search-meta-info"></div>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <div class="results-count badge text-bg-light text-primary fw-semibold" id="search-results-summary"></div>
+                <button id="back-to-search" class="btn btn-outline-secondary btn-sm">
+                    <i class="fas fa-arrow-left me-1"></i> Tìm lại
+                </button>
+            </div>
+        </div>
+
+        <div class="results-layout">
+            <aside class="filters-panel">
+                <div class="filter-card">
+                    <div class="filter-card-header d-flex justify-content-between align-items-center">
+                        <h5 class="filter-title mb-0">Bộ lọc tìm kiếm</h5>
+                        <button type="button" class="btn btn-link p-0 filter-reset">Bỏ lọc</button>
+                    </div>
+
+                    <div class="filter-group">
+                        <p class="filter-group-title">Giờ đi</p>
+                        <div class="filter-chip-group">
+                            <button type="button" class="filter-chip" data-filter="time" data-value="0-6">
+                                Sáng sớm 00:00 - 06:00 <span class="filter-count">(0)</span>
+                            </button>
+                            <button type="button" class="filter-chip" data-filter="time" data-value="6-12">
+                                Buổi sáng 06:00 - 12:00 <span class="filter-count">(0)</span>
+                            </button>
+                            <button type="button" class="filter-chip" data-filter="time" data-value="12-18">
+                                Buổi chiều 12:00 - 18:00 <span class="filter-count">(0)</span>
+                            </button>
+                            <button type="button" class="filter-chip" data-filter="time" data-value="18-24">
+                                Buổi tối 18:00 - 24:00 <span class="filter-count">(0)</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="filter-group">
+                        <p class="filter-group-title">Loại xe</p>
+                        <div class="filter-chip-group">
+                            <button type="button" class="filter-chip" data-filter="vehicle" data-value="Ghế">
+                                Ghế <span class="filter-count">(0)</span>
+                            </button>
+                            <button type="button" class="filter-chip" data-filter="vehicle" data-value="Giường">
+                                Giường <span class="filter-count">(0)</span>
+                            </button>
+                            <button type="button" class="filter-chip" data-filter="vehicle" data-value="Limousine">
+                                Limousine <span class="filter-count">(0)</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="filter-group">
+                        <p class="filter-group-title">Hàng ghế</p>
+                        <div class="filter-chip-group">
+                            <button type="button" class="filter-chip" data-filter="seat_row" data-value="front">
+                                Hàng đầu <span class="filter-count">(0)</span>
+                            </button>
+                            <button type="button" class="filter-chip" data-filter="seat_row" data-value="middle">
+                                Hàng giữa <span class="filter-count">(0)</span>
+                            </button>
+                            <button type="button" class="filter-chip" data-filter="seat_row" data-value="back">
+                                Hàng cuối <span class="filter-count">(0)</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="filter-group">
+                        <p class="filter-group-title">Tầng</p>
+                        <div class="filter-chip-group">
+                            <button type="button" class="filter-chip" data-filter="floor" data-value="upper">
+                                Tầng trên <span class="filter-count">(0)</span>
+                            </button>
+                            <button type="button" class="filter-chip" data-filter="floor" data-value="lower">
+                                Tầng dưới <span class="filter-count">(0)</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+
+            <div class="results-content">
+                <div id="search-results" class="trip-card-list"></div>
+                <div id="no-results" class="no-results text-center py-5" style="display: none;">
+                    <p class="text-muted fs-5 mb-2">Không tìm thấy chuyến xe nào phù hợp.</p>
+                    <p class="text-muted mb-0">Hãy thay đổi bộ lọc hoặc chọn ngày khác.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TUYẾN PHỔ BIẾN -->
+    <section class="popular-routes mt-5 mb-5">
+        <h2 class="section-title">TUYẾN PHỔ BIẾN</h2>
+        <p class="section-subtitle">Được khách hàng tin tưởng và lựa chọn</p>
+
+        <div class="row mt-4">
+            {% for group in popular_groups %}
+                <div class="col-md-4 mb-4">
+                    <div class="route-card">
+                        <div class="route-image">
+                            {% if group.from_location == "Hà Nội" %}
+                                <img src="{% static 'img/hn.png' %}" alt="{{ group.from_location }}" class="route-image-img">
+                            {% elif group.from_location == "Đà Nẵng" %}
+                                <img src="{% static 'img/dn.png' %}" alt="{{ group.from_location }}" class="route-image-img">
+                            {% else %}
+                                <img src="{% static 'img/hcm.png' %}" alt="{{ group.from_location }}" class="route-image-img">
+                            {% endif %}
+
+                            <span class="route-label">
+                                Tuyến xe từ<br>{{ group.from_location }}
+                            </span>
+                        </div>
+
+                        <div class="route-info">
+                            <h5>{{ group.from_location }}</h5>
+
+                            <div class="route-details">
+                                {% for d in group.destinations %}
+                                    <div class="detail-item">
+                                        <span class="label">{{ d.to_location }}</span>
+                                        <span class="label">
+                                            {{ d.duration_str }} – {{ d.date_str }}
+                                        </span>
+                                        <span class="price">
+                                            {{ d.price|floatformat:"0" }}đ
+                                        </span>
+                                    </div>
+                                {% empty %}
+                                    <div class="detail-item">
+                                        <span class="label text-muted">
+                                            Chưa có dữ liệu đặt vé cho tuyến này
+                                        </span>
+                                    </div>
+                                {% endfor %}
+                            </div>
+
+                            <button class="btn btn-book-route">
+                                Chọn tuyến
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </section>
+
+    <!-- thẻ ẩn để truyền URL chọn ghế cho file JS -->
+    <div id="seat-selection-config" data-seat-selection-url="{% url 'seat_selection' %}"></div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+    <!-- jQuery + Select2 -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"
+            integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo="
+            crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/i18n/vi.js"></script>
+
+    <!-- JS trang chủ -->
+    <script src="{% static 'js/index.js' %}"></script>
+{% endblock %}

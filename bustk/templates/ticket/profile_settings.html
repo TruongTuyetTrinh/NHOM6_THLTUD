@@ -1,0 +1,511 @@
+{% extends "ticket/base.html" %}
+{% block title %}Thông tin Cá nhân - BusTicket{% endblock %}
+
+{% block content %}
+<style>
+    .profile-page {
+        background-color: white;
+        min-height: 100vh;
+        padding: 2rem 0;
+    }
+
+    .profile-container {
+        max-width: 1000px;
+        margin: 0 auto;
+        padding: 0 1rem;
+    }
+
+    .profile-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 1.5rem 0;
+        border-bottom: 1px solid #eee;
+        margin-bottom: 2rem;
+    }
+
+    .user-info {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .avatar {
+        width: 70px;
+        height: 70px;
+        border-radius: 50%;
+        background: #ff6b35;
+        color: white;
+        font-weight: bold;
+        font-size: 1.8rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .user-details h2 {
+        margin: 0;
+        font-size: 1.4rem;
+        color: #1e3a5f;
+        font-weight: 600;
+    }
+
+    .user-details p {
+        margin: 0.25rem 0 0;
+        color: #666;
+        font-size: 0.95rem;
+    }
+
+    .edit-btn {
+        background: #1e90ff;
+        color: white;
+        border: none;
+        padding: 0.6rem 1.5rem;
+        border-radius: 6px;
+        font-weight: 600;
+        font-size: 0.95rem;
+        cursor: pointer;
+        transition: background 0.3s;
+    }
+
+    .edit-btn:hover {
+        background: #1e80ee;
+    }
+
+    .form-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .form-group.full {
+        grid-column: 1 / -1;
+    }
+
+    .form-label {
+        font-weight: 600;
+        color: #1e3a5f;
+        margin-bottom: 0.5rem;
+        font-size: 0.95rem;
+    }
+
+    .info-display {
+        padding: 0.75rem;
+        background: #f9f9f9;
+        border: 1px solid #e0e0e0;
+        border-radius: 6px;
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+        color: #333;
+        font-size: 0.95rem;
+    }
+
+    .form-input {
+        padding: 0.75rem;
+        border: 1px solid #e0e0e0;
+        border-radius: 6px;
+        font-size: 0.95rem;
+        transition: border 0.3s;
+    }
+
+    .form-input:focus {
+        border-color: #1e90ff;
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(30, 144, 255, 0.1);
+    }
+
+    .gender-options {
+        display: flex;
+        gap: 1.5rem;
+        align-items: center;
+    }
+
+    .gender-option {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.95rem;
+    }
+
+    .email-section {
+        margin-top: 2rem;
+        padding-top: 2rem;
+        border-top: 1px solid #eee;
+    }
+
+    .email-section h3 {
+        color: #1e3a5f;
+        font-weight: 600;
+        margin-bottom: 1rem;
+        font-size: 1.1rem;
+    }
+
+    .email-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 1rem;
+        background: #f9f9f9;
+        border: 1px solid #e0e0e0;
+        border-radius: 6px;
+        margin-bottom: 1rem;
+    }
+
+    .email-info {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .email-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: #e3f2fd;
+        color: #2196f3;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1rem;
+    }
+
+    .email-text p {
+        margin: 0;
+        font-weight: 600;
+        color: #1e3a5f;
+    }
+
+    .email-date {
+        color: #999;
+        font-size: 0.85rem;
+    }
+
+    .add-email-btn {
+        width: 100%;
+        padding: 0.75rem;
+        background: #f0f8ff;
+        color: #1e90ff;
+        border: 2px dashed #1e90ff;
+        border-radius: 6px;
+        font-weight: 600;
+        cursor: pointer;
+        text-align: center;
+        transition: all 0.3s;
+    }
+
+    .add-email-btn:hover {
+        background: #e3f2fd;
+    }
+
+    .btn-delete-email {
+        background: none;
+        border: none;
+        color: #999;
+        font-size: 0.9rem;
+        cursor: pointer;
+        padding: 0.5rem;
+        transition: color 0.3s;
+    }
+
+    .btn-delete-email:hover {
+        color: #e74c3c;
+    }
+
+    .form-actions {
+        text-align: right;
+        margin-top: 1.5rem;
+        display: none;
+    }
+
+    .form-actions.show {
+        display: block;
+    }
+
+    .btn-save, .btn-cancel {
+        padding: 0.75rem 1.5rem;
+        border: none;
+        border-radius: 6px;
+        font-weight: 600;
+        cursor: pointer;
+        margin-left: 0.5rem;
+    }
+
+    .btn-save {
+        background: #1e90ff;
+        color: white;
+    }
+
+    .btn-cancel {
+        background: #eee;
+        color: #666;
+    }
+
+    @media (max-width: 768px) {
+        .form-grid {
+            grid-template-columns: 1fr;
+        }
+        .profile-header {
+            flex-direction: column;
+            text-align: center;
+            gap: 1rem;
+        }
+        .edit-btn {
+            width: 100%;
+        }
+    }
+</style>
+
+<div class="profile-page">
+    <div class="profile-container">
+        <!-- Header -->
+        <div class="profile-header">
+            <div class="user-info">
+                <div class="avatar">
+                    {{ user.username|slice:":1"|upper }}
+                </div>
+                <div class="user-details">
+                    <h2>{{ user.username }}</h2>
+                    <p>{{ user.email }}</p>
+                </div>
+            </div>
+            <button class="edit-btn" id="editBtn">Edit</button>
+        </div>
+
+        <!-- Form -->
+        <form id="profileForm">
+            <div class="form-grid">
+                <!-- Họ và tên (username) -->
+                <div class="form-group">
+                    <label class="form-label">Tên đăng nhập</label>
+                    <div class="info-display" id="fullname-display">{{ user.username }}</div>
+                    <input type="text" class="form-input" name="fullname" value="{{ user.username }}" style="display:none;">
+                </div>
+
+                <!-- 1. Ngày sinh -->
+                <div class="info-display" id="birthday-display">
+                    {% if user.birthday %}{{ user.birthday|date:"d/m/Y" }}{% else %}Chưa cập nhật{% endif %}
+                </div>
+                <input type="date" class="form-input" name="birthday" value="{{ user.birthday|date:'Y-m-d'|default:'' }}" style="display:none;">
+
+                <!-- 2. Giới tính -->
+                {% if user.gender == 'female' %}Nữ
+                {% elif user.gender == 'male' %}Nam
+                {% elif user.gender == 'other' %}Khác
+                {% else %}Chưa chọn{% endif %}
+
+                <!-- Radio buttons -->
+                <input type="radio" name="gender" value="female" {% if user.gender == 'female' %}checked{% endif %}>
+                <input type="radio" name="gender" value="male" {% if user.gender == 'male' %}checked{% endif %}>
+                <input type="radio" name="gender" value="other" {% if user.gender == 'other' %}checked{% endif %}>
+
+                <!-- 3. Địa chỉ -->
+                <div class="info-display" id="address-display">{{ user.address|default:"Chưa cập nhật" }}</div>
+                <input type="text" class="form-input" name="address" value="{{ user.address }}" ...>
+
+                <!-- 4. Số điện thoại -->
+                <div class="info-display" id="phone-display">{{ user.phone|default:"Chưa cập nhật" }}</div>
+                <input type="tel" class="form-input" name="phone" value="{{ user.phone }}" ...>
+
+                <!-- Mật khẩu -->
+                <div class="form-group">
+                    <label class="form-label">Mật khẩu</label>
+                    <div class="info-display">••••••••</div>
+                    <input type="password" class="form-input" name="password" placeholder="Nhập mật khẩu mới" style="display:none;">
+                </div>
+            </div>
+
+            <!-- Email Section -->
+            <div class="email-section">
+                <h3>My email Address</h3>
+
+                <!-- Email chính -->
+                <div class="email-item">
+                    <div class="email-info">
+                        <div class="email-icon">
+                            <i class="fas fa-check"></i>
+                        </div>
+                        <div class="email-text">
+                            <p>{{ user.email }}</p>
+                            <span class="email-date">Email chính</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Email phụ -->
+                {% for extra in user.extra_emails.all %}
+                <div class="email-item" id="email-{{ extra.id }}">
+                    <div class="email-info">
+                        <div class="email-icon">
+                            <i class="fas fa-envelope"></i>
+                        </div>
+                        <div class="email-text">
+                            <p>{{ extra.email }}</p>
+                            <span class="email-date">{{ extra.added_at|timesince }} ago</span>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-delete-email" onclick="deleteEmail({{ extra.id }})">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>
+                </div>
+                {% endfor %}
+
+                <!-- Nút thêm -->
+                <button type="button" class="add-email-btn" id="addEmailBtn">
+                    + Add Email Address
+                </button>
+            </div>
+
+            <!-- Actions -->
+            <div class="form-actions" id="formActions">
+                <button type="button" class="btn-cancel" onclick="cancelEdit()">Hủy</button>
+                <button type="button" class="btn-save" onclick="saveProfile()">Lưu thay đổi</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal thêm email -->
+<div class="modal fade" id="addEmailModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Thêm Email Phụ</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Email mới</label>
+                    <input type="email" class="form-input" id="newEmail" placeholder="example@gmail.com" required>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="btn btn-primary" onclick="addNewEmail()">Thêm</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Lấy CSRF token từ cookie
+    function getCSRFToken() {
+        const name = 'csrftoken';
+        const cookies = document.cookie.split(';');
+        for (let cookie of cookies) {
+            const [key, value] = cookie.trim().split('=');
+            if (key === name) return decodeURIComponent(value);
+        }
+        return null;
+    }
+
+    // Toggle edit mode
+    const editBtn = document.getElementById('editBtn');
+    const formActions = document.getElementById('formActions');
+    const displays = document.querySelectorAll('.info-display');
+    const inputs = document.querySelectorAll('.form-input, .gender-options');
+
+    editBtn.addEventListener('click', () => {
+        displays.forEach(d => d.style.display = 'none');
+        inputs.forEach(i => i.style.display = i.classList.contains('gender-options') ? 'flex' : 'block');
+        formActions.classList.add('show');
+        editBtn.style.display = 'none';
+    });
+
+    function cancelEdit() {
+        location.reload();
+    }
+
+    // Lưu profile
+    function saveProfile() {
+        const formData = new FormData(document.getElementById('profileForm'));
+        formData.append('action', 'update_profile');
+
+        fetch('{% url "profile_settings" %}', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': getCSRFToken()
+            },
+            credentials: 'same-origin'
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.status === 'success') {
+                alert('Cập nhật thành công!');
+                location.reload();
+            } else {
+                alert('Lỗi: ' + data.message);
+            }
+        })
+        .catch(() => alert('Lỗi kết nối!'));
+    }
+
+    // Mở modal thêm email
+    document.getElementById('addEmailBtn').addEventListener('click', () => {
+        new bootstrap.Modal(document.getElementById('addEmailModal')).show();
+    });
+
+    // Thêm email mới
+    function addNewEmail() {
+        const email = document.getElementById('newEmail').value.trim();
+        if (!email || !/^\S+@\S+\.\S+$/.test(email)) {
+            alert('Email không hợp lệ!');
+            return;
+        }
+
+        fetch('{% url "profile_settings" %}', {
+            method: 'POST',
+            body: JSON.stringify({ action: 'add_email', email: email }),
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': getCSRFToken()
+            },
+            credentials: 'same-origin'
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.status === 'success') {
+                alert('Thêm email thành công!');
+                location.reload();
+            } else {
+                alert('Lỗi: ' + data.message);
+            }
+        })
+        .catch(() => alert('Lỗi kết nối!'));
+    }
+
+    // Xóa email
+    function deleteEmail(emailId) {
+        if (!confirm('Xóa email này?')) return;
+
+        fetch('{% url "profile_settings" %}', {
+            method: 'POST',
+            body: JSON.stringify({ action: 'delete_email', email_id: emailId }),
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': getCSRFToken()
+            },
+            credentials: 'same-origin'
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.status === 'success') {
+                document.getElementById('email-' + emailId).remove();
+            } else {
+                alert('Lỗi: ' + data.message);
+            }
+        })
+        .catch(() => alert('Lỗi kết nối!'));
+    }
+</script>
+{% endblock %}

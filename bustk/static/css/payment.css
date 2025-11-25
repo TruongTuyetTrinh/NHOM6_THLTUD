@@ -1,0 +1,185 @@
+.payment-container {
+    max-width: 900px;
+    margin: 40px auto;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+    padding: 24px 28px;
+    display: grid;
+    grid-template-columns: 1.4fr 1fr;
+    gap: 24px;
+}
+
+.payment-left h3 {
+    margin: 0 0 4px;
+    font-size: 20px;
+    font-weight: 700;
+    color: #1e293b;
+}
+
+.payment-left p {
+    margin: 2px 0;
+    font-size: 13px;
+    color: #64748b;
+}
+
+.qr-box {
+    margin-top: 16px;
+    padding: 16px;
+    background: #f8fafc;
+    border-radius: 12px;
+    text-align: center;
+    position: relative; /* để overlay absolute */
+    overflow: hidden;
+}
+
+.qr-box img {
+    max-width: 220px;
+    width: 100%;
+}
+
+.amount-text {
+    margin-top: 10px;
+    font-size: 18px;
+    font-weight: 700;
+    color: #dc2626;
+}
+
+.countdown {
+    margin-top: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #b91c1c;
+}
+
+.status-box {
+    margin-top: 10px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    font-size: 13px;
+}
+
+.status-pending {
+    background: #fffbeb;
+    color: #92400e;
+}
+
+.status-success {
+    background: #ecfdf3;
+    color: #166534;
+}
+
+.status-expired {
+    background: #fef2f2;
+    color: #b91c1c;
+}
+
+/* PANEL PHẢI */
+
+.payment-right {
+    border-left: 1px dashed #e2e8f0;
+    padding-left: 20px;
+    font-size: 13px;
+    color: #475569;
+}
+
+.payment-right-title {
+    font-weight: 600;
+    color: #0f172a;
+    margin-top: 0;
+    margin-bottom: 12px;
+}
+
+.info-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 8px;
+}
+
+.info-row-total {
+    margin-top: 8px;
+    border-top: 1px dashed #e2e8f0;
+    padding-top: 8px;
+}
+
+.info-label {
+    color: #64748b;
+}
+
+.info-value {
+    font-weight: 600;
+    color: #0f172a;
+    text-align: right;
+    margin-left: 8px;
+}
+
+.back-link {
+    margin-top: 12px;
+    font-size: 13px;
+    color: #2563eb;
+    text-decoration: none;
+    display: inline-block;
+}
+
+.back-link:hover {
+    text-decoration: underline;
+}
+
+/* OVERLAY CHE QR KHI HẾT HẠN */
+
+.qr-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(255,255,255,0.9);
+    display: none;           /* JS bật thành flex */
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 20px;
+}
+
+.qr-overlay-content h4 {
+    margin-bottom: 8px;
+    font-size: 18px;
+    color: #b91c1c;
+}
+
+.qr-overlay-content p {
+    margin: 4px 0;
+    font-size: 13px;
+    color: #4b5563;
+}
+
+.qr-overlay-note {
+    font-style: italic;
+}
+.payment-success-modal{
+    position: fixed;
+    inset: 0;
+    background: rgba(15,23,42,0.35);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+}
+
+.payment-success-box{
+    background: #fff;
+    padding: 24px 28px;
+    border-radius: 12px;
+    box-shadow: 0 10px 40px rgba(15,23,42,0.18);
+    max-width: 360px;
+    width: 90%;
+    text-align: center;
+}
+
+.payment-success-box h3{
+    margin-bottom: 8px;
+}
+
+.popup-actions{
+    margin-top: 16px;
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+}

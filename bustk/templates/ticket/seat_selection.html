@@ -1,0 +1,288 @@
+{% extends 'ticket/base.html' %}
+{% load static %}
+
+{% block title %}Chọn ghế{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/seat_selection.css' %}">
+{% endblock %}
+
+{% block content %}
+
+<div class="hero-banner"></div>
+
+<div class="seat-selection-container">
+
+  <!-- CONFIG cho JS đọc đường dẫn ảnh & URL -->
+  <div id="seat-config"
+       data-img-sold="{% static 'img/ghe_xam.png' %}"
+       data-img-available="{% static 'img/ghe_xanh.png' %}"
+       data-img-selected="{% static 'img/ghe_hong.png' %}"
+       data-index-url="{% url 'index' %}"
+       data-payment-url="{% url 'payment' %}"
+      >
+  </div>
+
+  <div class="main-content">
+    <div class="left-section">
+      <!-- CHỌN GHẾ -->
+      <div class="seat-section">
+        <h2>Chọn ghế</h2>
+
+        <div class="seat-wrapper">
+          <!-- Tầng dưới -->
+          <div class="seat-column">
+            <h3>Tầng dưới</h3>
+            <div class="seat-grid" id="lower-floor">
+              <!-- JS sinh ghế -->
+            </div>
+          </div>
+
+          <!-- Tầng trên -->
+          <div class="seat-column">
+            <h3>Tầng trên</h3>
+            <div class="seat-grid" id="upper-floor">
+              <!-- JS sinh ghế -->
+            </div>
+          </div>
+
+          <!-- Legend bên phải -->
+          <div class="seat-column" style="align-items: flex-start;">
+            <div class="legend" id="legend">
+              <div class="legend-item">
+                <div class="legend-icon">
+                  <img src="{% static 'img/ghe_xam.png' %}" alt="Đã bán">
+                  <div class="legend-number" style="color: var(--color-sold);">A01</div>
+                </div>
+                <span>Đã bán</span>
+              </div>
+              <div class="legend-item">
+                <div class="legend-icon">
+                  <img src="{% static 'img/ghe_xanh.png' %}" alt="Còn trống">
+                  <div class="legend-number" style="color: var(--color-available);">A02</div>
+                </div>
+                <span>Còn trống</span>
+              </div>
+              <div class="legend-item">
+                <div class="legend-icon">
+                  <img src="{% static 'img/ghe_hong.png' %}" alt="Đang chọn">
+                  <div class="legend-number" style="color: var(--color-selected);">B06</div>
+                </div>
+                <span>Đang chọn</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- THÔNG TIN LIÊN HỆ + ĐIỀU KHOẢN -->
+      <div class="info-terms-container">
+        <!-- Thông tin liên hệ -->
+        <div class="customer-info-section">
+          <h3>Thông tin liên hệ</h3>
+
+          <div class="form-group">
+            <label>Họ và tên <span class="required">*</span></label>
+            <input type="text"
+                   value="{{ user_fullname|default:'Chưa cập nhật' }}"
+                   readonly
+                   class="readonly-input">
+          </div>
+
+          <div class="form-group">
+            <label>Số điện thoại <span class="required">*</span></label>
+            <input type="tel"
+                   id="phone-input"
+                   value="{{ user_phone|default:'' }}"
+                   placeholder="+84912345678"
+                   required>
+            <small style="color:#666; font-size:12px;"></small>
+          </div>
+
+          <div class="form-group">
+            <label>Email nhận hóa đơn (Gmail) <span class="required">*</span></label>
+            <input type="email"
+                   id="gmail-input"
+                   placeholder="abc@gmail.com"
+                   required
+                   class="gmail-input">
+            <small style="color:#666; font-size:12px;"></small>
+          </div>
+        </div>
+
+        <!-- Điều khoản -->
+        <div class="terms-section">
+          <h3 style="color: #FF3D00;">ĐIỀU KHOẢN & LƯU Ý</h3>
+
+          <div class="terms-content">
+            <p><strong>Quy khách vui lòng đăng ký/Đăng nhập tài khoản để nhận chương trình khuyến mại.</strong></p>
+
+            <p>
+              (*) Quý khách vui lòng có mặt tại bến xuất phát của xe trước ít nhất 30 phút giờ xe khởi hành, mang theo thông báo đã thanh toán về thành công có chứa mã vé được gửi từ hệ thống DANABUS. Vui lòng liên hệ Trung tâm tổng đài
+              <span class="terms-highlight">1900 6067</span> để được hỗ trợ.
+            </p>
+
+            <p>
+              (*) Nếu quý khách có nhu cầu đổi chuyến, vui lòng liên hệ Tổng đài trung chuyển
+              <span class="terms-highlight">1900 6918</span> trước khi đặt vé. Chúng tôi không đón/trung chuyên tại những điểm xe trung chuyển không thể tới được.
+            </p>
+
+            <p>
+              (*) Nếu quý khách có nhu cầu đổi chuyến đường ngắn hơn so với hành trình, vui lòng gọi Tổng đài
+              <span class="terms-highlight">1900 6067</span> để được hướng dẫn cách giá vé tốt nhất.
+            </p>
+          </div>
+        </div>
+
+        <!-- Checkbox chấp nhận điều khoản -->
+        <div style="margin-top: 25px; padding: 15px 0; border-top: 1px solid #eee;">
+          <label style="display: flex; align-items: flex-start; gap: 12px; cursor: pointer; user-select: none; font-size: 13.5px; line-height: 1.5; color: #333;">
+            <input type="checkbox" id="terms-agree" required
+                   style="margin-top: 2px; width: 17px; height: 17px; flex-shrink: 0;">
+            <span>
+              <span style="text-decoration: underline; color: #FF3D00; font-weight: 500;">Chấp nhận điều khoản </span>
+              đặt vé &amp; chính sách bảo mật thông tin của Dana Bus Lines
+            </span>
+          </label>
+        </div>
+      </div>
+
+      <!-- THÔNG TIN ĐÓN / TRẢ -->
+      <div class="pickup-dropoff-section">
+        <h3>Thông tin đón trả</h3>
+
+        <div class="pickup-dropoff-grid">
+          <!-- ĐIỂM ĐÓN -->
+          <div class="pickup-dropoff-item">
+            <h4>ĐIỂM ĐÓN</h4>
+
+            <div class="radio-group">
+              <label>
+                <input type="radio" name="pickup-type" value="pickup" checked>
+                Bến xe/VP
+              </label>
+              <label>
+                <input type="radio" name="pickup-type" value="transfer">
+                Trung chuyển
+              </label>
+            </div>
+
+            <div class="info-box-group">
+              <div class="info-box">
+                <span id="pickup-location-display"
+                      style="display: inline-block; min-width: 120px; padding: 6px 10px; background: white; border: 1px solid #d0d0d0; border-radius: 4px; font-size: 14px; font-weight: 500; color: #333; box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);">
+                  Đang tải...
+                </span>
+              </div>
+            </div>
+
+            <div class="info-text">
+              Quý khách vui lòng có mặt tại
+              <br><strong id="pickup-time-display">Trước </strong> hoặc kiểm tra
+              <br> thông tin trước khi lên xe.
+            </div>
+          </div>
+
+          <!-- ĐIỂM TRẢ -->
+          <div class="pickup-dropoff-item">
+            <h4>ĐIỂM TRẢ</h4>
+
+            <div class="radio-group">
+              <label>
+                <input type="radio" name="dropoff-type" value="dropoff" checked>
+                Bến xe/VP
+              </label>
+              <label>
+                <input type="radio" name="dropoff-type" value="transfer">
+                Trung chuyển
+              </label>
+            </div>
+
+            <div class="info-box-group">
+              <div class="info-box">
+                <span id="dropoff-location-display"
+                      style="display: inline-block; min-width: 120px; padding: 6px 10px; background: white; border: 1px solid #d0d0d0; border-radius: 4px; font-size: 14px; font-weight: 500; color: #333; box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);">
+                  Đang tải...
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- SIDEBAR PHẢI -->
+    <div class="right-sidebar">
+      <div class="summary-section">
+        <div class="summary-section-title">Thông tin lượt đi</div>
+        <div class="summary-row">
+          <span class="summary-label">Tuyến xe</span>
+          <span class="summary-value" id="route-display">Đà Nẵng - Đà Lạt</span>
+        </div>
+        <div class="summary-row">
+          <span class="summary-label">Thời gian xuất bến</span>
+          <span class="summary-value" id="departure-display">13:30 20/11/2025</span>
+        </div>
+        <div class="summary-row">
+          <span class="summary-label">Số lượng ghế</span>
+          <span class="summary-value" id="seat-count">0 Ghế</span>
+        </div>
+        <div class="summary-row">
+          <span class="summary-label">Số ghế</span>
+          <span class="summary-value" id="selected-seats">-</span>
+        </div>
+        <div class="summary-row">
+          <span class="summary-label">Điểm trả khách</span>
+          <span class="summary-value">-</span>
+        </div>
+        <div class="summary-row">
+          <span class="summary-label">Tổng tiền lượt đi</span>
+          <span class="summary-value" id="trip-total">0đ</span>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="summary-section">
+        <div class="summary-section-title">
+          Chi tiết giá
+          <div class="info-icon">i</div>
+        </div>
+        <div class="summary-row">
+          <span class="summary-label">Giá vé lượt đi</span>
+          <span class="summary-value highlight" id="ticket-price">0đ</span>
+        </div>
+        <div class="summary-row">
+          <span class="summary-label">Phí thanh toán</span>
+          <span class="summary-value" id="payment-fee">0đ</span>
+        </div>
+        <div class="summary-row">
+          <span class="summary-label">Tổng tiền</span>
+          <span class="summary-value highlight" id="total-summary">0đ</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- THANH DƯỚI -->
+  <div class="bottom-section">
+    <div class="total-info">
+      <div class="total-header">
+        <span class="total-label">Thành tiền</span>
+      </div>
+      <div class="total-price" id="total-price">0đ</div>
+    </div>
+
+    <div class="action-buttons">
+      <button type="button" class="btn btn-cancel" id="cancel-btn">Hủy</button>
+      <button type="button" class="btn btn-payment" id="payment-btn">Thanh toán</button>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/seat_selection.js' %}"></script>
+{% endblock %}

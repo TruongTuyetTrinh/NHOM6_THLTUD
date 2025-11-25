@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Vé xe #{{ ticket.id }}</title>
+    <style>
+        body {
+            font-family: DejaVu Sans, Arial, sans-serif;
+            font-size: 12px;
+        }
+        .ticket-wrapper {
+            border: 1px solid #ccc;
+            padding: 16px;
+        }
+        .ticket-header {
+            text-align: center;
+            margin-bottom: 12px;
+        }
+        .ticket-header h2 {
+            margin: 0;
+            font-size: 18px;
+        }
+        .ticket-header p {
+            margin: 4px 0;
+        }
+        .ticket-section {
+            margin-bottom: 10px;
+        }
+        .section-title {
+            font-weight: bold;
+            margin-bottom: 4px;
+            border-bottom: 1px solid #ddd;
+        }
+        table.info-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        table.info-table td {
+            padding: 4px 0;
+            vertical-align: top;
+        }
+        .label {
+            width: 30%;
+            font-weight: bold;
+        }
+        .qr-box {
+            text-align: center;
+            margin-top: 10px;
+        }
+        .qr-box img {
+            width: 120px;
+            height: 120px;
+        }
+    </style>
+</head>
+<body>
+<div class="ticket-wrapper">
+    <div class="ticket-header">
+        <h2>VÉ XE DA NAGO</h2>
+        <p>Mã vé: {{ ticket.id }}</p>
+        {% if ticket.payment_order and ticket.payment_order.ticket_code %}
+        <p>Mã thanh toán: {{ ticket.payment_order.ticket_code }}</p>
+        {% endif %}
+    </div>
+
+    <div class="ticket-section">
+        <div class="section-title">Thông tin chuyến đi</div>
+        <table class="info-table">
+            <tr>
+                <td class="label">Tuyến đường:</td>
+                <td>
+                    {% if ticket.payment_order and ticket.payment_order.from_location %}
+                        {{ ticket.payment_order.from_location }} → {{ ticket.payment_order.to_location }}
+                    {% elif ticket.trip %}
+                        {{ ticket.trip.departure_location }} → {{ ticket.trip.arrival_location }}
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
+            </tr>
+            <tr>
+                <td class="label">Ngày đi:</td>
+                <td>
+                    {% if ticket.payment_order and ticket.payment_order.depart_date %}
+                        {{ ticket.payment_order.depart_date }}
+                    {% elif ticket.trip and ticket.trip.departure_time %}
+                        {{ ticket.trip.departure_time|date:"d/m/Y" }}
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
+            </tr>
+            <tr>
+                <td class="label">Giờ khởi hành:</td>
+                <td>
+                    {% if ticket.payment_order and ticket.payment_order.depart_time %}
+                        {{ ticket.payment_order.depart_time }}
+                    {% elif ticket.trip and ticket.trip.departure_time %}
+                        {{ ticket.trip.departure_time|date:"H:i" }}
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
+            </tr>
+            <tr>
+                <td class="label">Loại xe:</td>
+                <td>
+                    {% if ticket.trip and ticket.trip.vehicle_type %}
+                        {{ ticket.trip.vehicle_type|upper }}
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="ticket-section">
+        <div class="section-title">Thông tin hành khách</div>
+        <table class="info-table">
+            <tr>
+                <td class="label">Hành khách:</td>
+                <td>{{ user.get_full_name|default:user.username }}</td>
+            </tr>
+            <tr>
+                <td class="label">Số ghế:</td>
+                <td>{{ ticket.seat_number }}</td>
+            </tr>
+            <tr>
+                <td class="label">Giá vé:</td>
+                <td>
+                    {% if ticket.trip %}
+                        {{ ticket.trip.price|floatformat:0|intcomma }}đ
+                    {% elif ticket.payment_order %}
+                        {{ ticket.payment_order.amount|intcomma }}đ
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    {% if ticket.payment_order and ticket.payment_order.ticket_code %}
+    <div class="ticket-section">
+        <div class="section-title">Mã QR check-in</div>
+        <div class="qr-box">
+            <img src="https://api.qrserver.com/v1/create-qr-code/?size=140x140&data={{ ticket.payment_order.ticket_code }}" alt="QR check-in">
+            <p>Vui lòng xuất trình mã QR này khi lên xe.</p>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="ticket-section">
+        <div class="section-title">Lưu ý</div>
+        <p>- Vui lòng có mặt trước giờ khởi hành ít nhất 30 phút.</p>
+        <p>- Mang theo giấy tờ tùy thân và mã vé để đối chiếu.</p>
+    </div>
+</div>
+</body>
+</html>

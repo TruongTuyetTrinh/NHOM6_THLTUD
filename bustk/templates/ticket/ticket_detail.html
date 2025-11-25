@@ -1,0 +1,58 @@
+{% extends "ticket/base.html" %}
+{% load humanize %}
+
+{% block title %}Chi tiết vé #{{ ticket.id }} - DaNaGO{% endblock %}
+
+{% block content %}
+<div class="ticket-detail-container">
+  <h1>Chi tiết vé #{{ ticket.id }}</h1>
+
+  <div class="ticket-detail-grid">
+    <div>
+      <h3>Thông tin hành trình</h3>
+      <p><strong>Tuyến:</strong> {{ ticket.trip.departure_location }} → {{ ticket.trip.arrival_location }}</p>
+      <p><strong>Khởi hành:</strong> {{ ticket.trip.departure_time|date:"d/m/Y H:i" }}</p>
+      <p><strong>Đến nơi dự kiến:</strong> {{ ticket.trip.arrival_time|date:"d/m/Y H:i" }}</p>
+      <p><strong>Loại xe:</strong> {{ ticket.trip.vehicle_type }}</p>
+    </div>
+
+    <div>
+      <h3>Thông tin vé</h3>
+      <p><strong>Hành khách:</strong> {{ request.user.get_full_name|default:request.user.username }}</p>
+      <p><strong>Số ghế:</strong> {{ ticket.seat_number }}</p>
+      <p><strong>Giá vé:</strong> {{ ticket.trip.price|floatformat:0|intcomma }} đ</p>
+      <p><strong>Trạng thái:</strong> {{ ticket.get_status_display }}</p>
+      {% if ticket.payment_order %}
+      <p><strong>Mã thanh toán:</strong> {{ ticket.payment_order.ticket_code }}</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="ticket-detail-actions">
+    <a href="{% url 'download_ticket' ticket.id %}" class="btn btn-primary">Tải vé (PDF)</a>
+
+    {% if can_cancel %}
+      <button class="btn btn-danger"
+              data-ticket-id="{{ ticket.id }}"
+              onclick="openCancelModal({{ ticket.id }})">
+        Hủy vé
+      </button>
+    {% endif %}
+
+    {% if can_review %}
+      <button class="btn btn-secondary" onclick="openReviewModal({{ ticket.id }})">
+        Đánh giá chuyến đi
+      </button>
+    {% endif %}
+
+    {% if can_rebook %}
+      <a href="{% url 'rebook_ticket' ticket.id %}" class="btn btn-outline-primary">
+        Đặt lại chuyến này
+      </a>
+    {% endif %}
+  </div>
+
+  <a href="{% url 'my_tickets' %}" class="link-back">← Quay lại Vé của tôi</a>
+</div>
+
+{% endblock %}

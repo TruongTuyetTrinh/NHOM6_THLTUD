@@ -1,0 +1,57 @@
+.review-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.4);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.review-modal.show {
+  display: flex;
+}
+
+.review-box {
+  background: #fff;
+  padding: 20px;
+  border-radius: 10px;
+  max-width: 480px;
+  width: 100%;
+  box-shadow: 0 10px 40px rgba(15, 23, 42, 0.3);
+}
+
+.review-box h3 {
+  margin-top: 0;
+  margin-bottom: 12px;
+}
+
+.review-box label {
+  display: block;
+  margin-top: 10px;
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.review-box input[type="text"],
+.review-box select,
+.review-box textarea {
+  width: 100%;
+  padding: 8px 10px;
+  margin-top: 4px;
+  border-radius: 4px;
+  border: 1px solid #d1d5db;
+  font-size: 14px;
+}
+
+.review-box textarea {
+  min-height: 80px;
+  resize: vertical;
+}
+
+.review-actions {
+  margin-top: 14px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
