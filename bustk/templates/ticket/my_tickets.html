@@ -193,12 +193,11 @@
                             Tải vé (PDF)
                         </a>
 
-                        <button type="button"
-                                class="btn btn-danger btn-sm js-cancel-ticket"
-                                data-ticket-id="{{ ticket.id }}"
-                                data-cancel-url="/ticket/{{ ticket.id }}/cancel/">
-                            Hủy vé
-                        </button>
+                       <a href="{% url 'cancel_ticket' ticket.id %}"
+   class="btn btn-danger btn-sm">
+    Hủy vé
+</a>
+
 
                     {% elif ticket.status == 'completed' %}
                         <!-- Vé ĐÃ ĐI: tải vé + đánh giá + đặt lại -->
@@ -214,16 +213,17 @@
                         </button>
 
                         {% if ticket.payment_order and ticket.payment_order.from_location %}
-                            <a href="{% url 'index' %}?from={{ ticket.payment_order.from_location|urlencode }}&to={{ ticket.payment_order.to_location|urlencode }}"
-                               class="btn btn-outline-primary btn-sm">
-                                Đặt lại
-                            </a>
-                        {% elif ticket.trip %}
-                            <a href="{% url 'index' %}?from={{ ticket.trip.departure_location|urlencode }}&to={{ ticket.trip.arrival_location|urlencode }}"
-                               class="btn btn-outline-primary btn-sm">
-                                Đặt lại
-                            </a>
-                        {% endif %}
+                            <a href="{% url 'rebook_ticket' ticket.id %}"
+       class="btn btn-outline-primary btn-sm">
+        Đặt lại
+    </a>
+
+{% elif ticket.status == 'cancelled' %}
+    <a href="{% url 'rebook_ticket' ticket.id %}"
+       class="btn btn-outline-primary btn-sm">
+        Đặt lại
+    </a>
+{% endif %}
 
                     {% elif ticket.status == 'cancelled' %}
                         <!-- Vé ĐÃ HỦY: chỉ đặt lại -->

@@ -1,0 +1,175 @@
+{% extends "ticket/base.html" %}
+{% load static %}
+
+{% block title %}Xác nhận hủy vé - DaNaGO{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/cancel_ticket.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="cancel-confirmation-container">
+
+    <!-- Header -->
+    <div class="cancel-header">
+        <a href="{% url 'my_tickets' %}" class="btn-back">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                <path d="M12 5L7 10L12 15" stroke="currentColor"
+                      stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+        </a>
+        <div class="header-title">
+            <svg width="32" height="32" viewBox="0 0 32 32" fill="none" class="header-icon">
+                <rect x="4" y="6" width="24" height="20" rx="2" stroke="#1a3a52" stroke-width="2"/>
+                <path d="M4 10H28M10 14H14M10 18H14" stroke="#1a3a52"
+                      stroke-width="2" stroke-linecap="round"/>
+            </svg>
+            <h1>Xác nhận hủy vé</h1>
+        </div>
+    </div>
+
+    <!-- Warning -->
+    <div class="warning-card">
+        <div class="warning-icon">
+            <svg width="24" height="24">
+                <path d="M12 2L2 20h20L12 2z" stroke="#ff6b35" stroke-width="2" fill="none"/>
+                <path d="M12 9v4M12 16h.01" stroke="#ff6b35" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+        </div>
+
+        <div class="warning-content">
+            <h3 class="warning-title">Lưu ý quan trọng</h3>
+            <p class="warning-text">Bạn đang thực hiện hủy vé. Hành động không thể hoàn tác.</p>
+
+            {% if diff_hours %}
+            <p class="warning-text small">
+                Thời gian còn lại trước giờ khởi hành:
+                <strong>{{ diff_hours|floatformat:1 }} giờ</strong>
+            </p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Ticket info -->
+    <div class="info-card">
+    <h2 class="card-title">Thông tin vé</h2>
+    <div class="info-grid">
+
+        <div class="info-row">
+            <span class="info-label">Mã vé</span>
+            <span class="info-value">{{ ticket.id }}</span>
+        </div>
+
+        <div class="info-row">
+            <span class="info-label">Tuyến đường</span>
+            <span class="info-value">
+                {% if trip and trip.departure_location and trip.arrival_location %}
+                    {{ trip.departure_location }} → {{ trip.arrival_location }}
+                {% elif order and order.from_location %}
+                    {{ order.from_location }} → {{ order.to_location }}
+                {% else %}
+                    -
+                {% endif %}
+            </span>
+        </div>
+
+        <div class="info-row">
+            <span class="info-label">Ngày khởi hành</span>
+            <span class="info-value">
+                {% if trip and trip.departure_time %}
+                    {{ trip.departure_time|date:"d/m/Y" }} - {{ trip.departure_time|date:"H:i" }}
+                {% elif order and order.depart_date %}
+                    {{ order.depart_date }}{% if order.depart_time %} - {{ order.depart_time }}{% endif %}
+                {% else %}
+                    -
+                {% endif %}
+            </span>
+        </div>
+
+        <div class="info-row">
+            <span class="info-label">Ghế</span>
+            <span class="info-value">{{ ticket.seat_number }}</span>
+        </div>
+
+    </div>
+</div>
+
+</div>
+
+
+<!--            <div class="info-row">-->
+<!--                <span class="info-label">Ghế</span>-->
+<!--                <span class="info-value">{{ ticket.seat_number }}</span>-->
+<!--            </div>-->
+
+<!--        </div>-->
+<!--    </div>-->
+
+    <!-- Refund -->
+    <div class="info-card">
+        <h2 class="card-title">Thông tin hoàn tiền</h2>
+
+        <div class="info-row">
+    <span class="info-label">Giá vé gốc</span>
+    <span class="info-value">{{ seat_price|floatformat:0 }}đ</span>
+</div>
+
+<div class="info-row">
+    <span class="info-label">Phí hủy ({{ fee_percent }}%)</span>
+    <span class="info-value danger">-{{ refund_fee|floatformat:0 }}đ</span>
+</div>
+
+<div class="divider"></div>
+
+<div class="refund-highlight">
+    <span class="info-label">Số tiền hoàn lại</span>
+    <span class="refund-amount">{{ refund_amount|floatformat:0 }}đ</span>
+</div>
+
+        </div>
+
+        <p class="refund-note">Tiền sẽ được hoàn trong 3-5 ngày làm việc.</p>
+    </div>
+
+    <!-- Terms -->
+    <div class="info-card">
+        <h2 class="card-title">Điều khoản hủy</h2>
+        <ul class="terms-list">
+            <li><div class="term-bullet"></div>Hủy ≥ 24h: hoàn 100%</li>
+            <li><div class="term-bullet"></div>Hủy 12–24h: hoàn 50%</li>
+            <li><div class="term-bullet"></div>Hủy < 12h: không hoàn</li>
+            <li><div class="term-bullet"></div>Vé đã hủy không thể khôi phục</li>
+        </ul>
+    </div>
+
+    <!-- Agree -->
+    <div class="agreement-card">
+        <label class="checkbox-label">
+            <input type="checkbox" id="agree_checkbox">
+            <span>
+                Tôi đã đọc và đồng ý với điều khoản hủy vé.
+            </span>
+        </label>
+    </div>
+
+    <!-- Actions -->
+    <div class="action-buttons">
+        <a href="{% url 'my_tickets' %}" class="btn btn-outline">Quay lại</a>
+
+        <form method="POST" action="{% url 'cancel_ticket' ticket.id %}" id="cancel_form">
+    {% csrf_token %}
+    <input type="hidden" name="confirm" value="yes">
+    <button type="submit" class="btn btn-danger" id="confirm_btn" disabled>
+        Xác nhận hủy vé
+    </button>
+</form>
+
+
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/cancel_ticket.js' %}"></script>
+{% endblock %}

@@ -263,9 +263,9 @@ def logout_view(request):
     logout(request)
     return redirect('login')
 
-@login_required(login_url='login')
-def index(request):
-    return render(request, 'ticket/index.html')
+# @login_required(login_url='login')
+# def index(request):
+#     return render(request, 'ticket/index.html')
 
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
@@ -279,63 +279,86 @@ from .models import Trip, Ticket
 
 def index(request):
     """
-    Trang chủ: hiển thị form tìm kiếm + các tuyến phổ biến.
-    Các tuyến phổ biến được tính dựa trên số lượng vé đã đặt (Ticket).
-    Cố định 3 điểm xuất phát: Hà Nội, Đà Nẵng, TP Hồ Chí Minh.
+    Trang chủ:
+    - Nếu có ?from=&to= -> hiển thị các chuyến xe tương ứng
+    - Luôn hiển thị các tuyến phổ biến (dựa trên PaymentOrder đã thanh toán)
     """
+    # === 1. ĐỌC PARAM TÌM KIẾM ===
+    from_q = (request.GET.get("from") or "").strip()
+    to_q   = (request.GET.get("to") or "").strip()
+
+    # Chỉ lấy các chuyến còn sắp tới
+    trips = Trip.objects.filter(
+        departure_time__gte=timezone.now()
+    ).order_by("departure_time")
+
+    if from_q:
+        trips = trips.filter(departure_location__icontains=from_q)
+    if to_q:
+        trips = trips.filter(arrival_location__icontains=to_q)
+
+    has_search = bool(from_q or to_q)
+
+    # === 2. TÍNH CÁC TUYẾN PHỔ BIẾN ===
     FROM_CITIES = ["Hà Nội", "Đà Nẵng", "TP Hồ Chí Minh"]
     popular_groups = []
 
     for city in FROM_CITIES:
-        # Đếm số vé theo (departure_location, arrival_location)
-        tickets_qs = (
-            Ticket.objects
+        # Dựa trên PaymentOrder đã thanh toán
+        orders_qs = (
+            PaymentOrder.objects
             .filter(
-                trip__departure_location=city,
-                status__in=["upcoming", "completed"]
+                status="paid",
+                from_location__icontains=city,
             )
-            .values("trip__arrival_location")
+            .values("to_location")
             .annotate(total=Count("id"))
             .order_by("-total")
         )
 
-        # Lấy top 3 điểm đến
-        top_destinations = tickets_qs[:3]
+        top_destinations = orders_qs[:3]
 
         destinations = []
-        for d in top_destinations:
-            to_loc = d["trip__arrival_location"]
+        for row in top_destinations:
+            to_loc = row["to_location"]
 
-            # Lấy 1 chuyến mẫu để lấy giá & thời gian (nếu có)
+            # Lấy 1 trip mẫu để show thời gian + giá, nếu có
             sample_trip = (
                 Trip.objects
-                .filter(departure_location=city, arrival_location=to_loc)
-                .order_by("-departure_time")
+                .filter(
+                    departure_location__icontains=city,
+                    arrival_location__icontains=to_loc,
+                )
+                .order_by("departure_time")
                 .first()
             )
 
+            duration_str = None
+            date_str = None
+            price = None
+
             if sample_trip:
-                # format thời gian đi (ví dụ: "13 giờ 30 phút")
-                duration_minutes = int(
-                    (sample_trip.arrival_time - sample_trip.departure_time).total_seconds() // 60
-                )
-                hours = duration_minutes // 60
-                mins = duration_minutes % 60
-                if hours and mins:
-                    duration_str = f"{hours} giờ {mins} phút"
+                delta = sample_trip.arrival_time - sample_trip.departure_time
+                mins = int(delta.total_seconds() // 60)
+                hours = mins // 60
+                rest = mins % 60
+                if hours and rest:
+                    duration_str = f"{hours} giờ {rest} phút"
                 elif hours:
                     duration_str = f"{hours} giờ"
                 else:
-                    duration_str = f"{mins} phút"
+                    duration_str = f"{rest} phút"
 
                 date_str = sample_trip.departure_time.strftime("%d/%m/%Y")
+                price = sample_trip.price
 
-                destinations.append({
-                    "to_location": to_loc,
-                    "duration_str": duration_str,
-                    "date_str": date_str,
-                    "price": sample_trip.price,
-                })
+            destinations.append({
+                "to_location": to_loc,
+                "duration_str": duration_str,
+                "date_str": date_str,
+                "price": price,
+                "total": row["total"],   # nếu muốn show "đã đặt X lần"
+            })
 
         popular_groups.append({
             "from_location": city,
@@ -344,9 +367,14 @@ def index(request):
 
     context = {
         "popular_groups": popular_groups,
+
+        # cho phần search/list chuyến
+        "trips": trips,
+        "from_value": from_q,
+        "to_value": to_q,
+        "has_search": has_search,
     }
     return render(request, "ticket/index.html", context)
-
 
 # ===================== DANH SÁCH CHUYẾN XE (ĐƠN GIẢN) =====================
 
@@ -787,6 +815,8 @@ from reportlab.lib.units import mm
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.lib.utils import ImageReader
+from reportlab.lib import colors
+from reportlab.lib.colors import HexColor
 
 from .models import Ticket
 
@@ -823,37 +853,97 @@ def download_ticket(request, ticket_id):
 
     y = height - margin_y
 
-    # ===== TIÊU ĐỀ =====
-    p.setFont(font_name, 22)
-    p.drawString(margin_x, y, "VÉ XE - DaNaGO")
-    y -= 18
+    # ==== MÀU THƯƠNG HIỆU ====
+    primary = HexColor("#2563EB")  # xanh DaNaGO
+    primary_dark = HexColor("#1D4ED8")
+    gray_border = HexColor("#E5E7EB")
+    gray_text = HexColor("#4B5563")
+    bg_light = HexColor("#F9FAFB")
 
-    p.setLineWidth(0.5)
-    p.setStrokeColorRGB(0.8, 0.8, 0.8)
-    p.line(margin_x, y, margin_x + content_width, y)
-    y -= 20
+    # ===== HEADER THANH MÀU + LOGO =====
+    header_h = 28 * mm
+    p.setFillColor(primary)
+    p.setStrokeColor(primary)
+    p.rect(0, height - header_h, width, header_h, stroke=0, fill=1)
+
+    # Logo (nếu có file logo)
+    logo_y = height - header_h + 6 * mm
+    try:
+        logo_path = os.path.join(settings.BASE_DIR, "static", "img", "logo.png")
+        if os.path.exists(logo_path):
+            p.drawImage(
+                logo_path,
+                margin_x,
+                logo_y,
+                width=24 * mm,
+                height=16 * mm,
+                preserveAspectRatio=True,
+                mask="auto",
+            )
+            title_x = margin_x + 26 * mm
+        else:
+            title_x = margin_x
+    except Exception:
+        title_x = margin_x
+
+    # ==== KHUNG CARD CHÍNH ====
+    card_top = y
+    card_bottom = margin_y + 20
+    card_height = card_top - card_bottom
+
+    p.setFillColor(bg_light)
+    p.setStrokeColor(gray_border)
+    p.setLineWidth(0.8)
+    p.roundRect(
+        margin_x,
+        card_bottom,
+        content_width,
+        card_height,
+        6 * mm,
+        stroke=1,
+        fill=1,
+    )
+
+    # Nội dung bên trong card
+    inner_x = margin_x + 8 * mm
+    inner_y = card_top - 8 * mm
+    inner_width = content_width - 16 * mm
+
+    # ===== THÔNG TIN VÉ (trên cùng, bên trái) =====
+    p.setFillColor(primary_dark)
+    p.setFont(font_name, 12)
+    p.drawString(inner_x, inner_y, "Thông tin vé")
+    inner_y -= 10 * mm
 
     p.setFont(font_name, 11)
+    p.setFillColor(gray_text)
+    p.drawString(inner_x, inner_y, f"Mã vé: {ticket.id}")
+    inner_y -= 5 * mm
 
-    # ===== THÔNG TIN VÉ =====
-    p.drawString(margin_x, y, f"Mã vé: {ticket.id}")
-    y -= 16
     if order and order.ticket_code:
-        p.drawString(margin_x, y, f"Mã thanh toán: {order.ticket_code}")
-        y -= 16
+        p.drawString(inner_x, inner_y, f"Mã thanh toán: {order.ticket_code}")
+        inner_y -= 5 * mm
 
     full_name = request.user.get_full_name() or request.user.username
-    p.drawString(margin_x, y, f"Hành khách: {full_name}")
-    y -= 24
+    p.drawString(inner_x, inner_y, f"Hành khách: {full_name}")
+    inner_y -= 8 * mm
+
+    # đường kẻ mảnh
+    p.setStrokeColor(gray_border)
+    p.setLineWidth(0.5)
+    p.line(inner_x, inner_y, inner_x + inner_width, inner_y)
+    inner_y -= 6 * mm
 
     # ===== THÔNG TIN CHUYẾN ĐI =====
-    p.setFont(font_name, 13)
-    p.drawString(margin_x, y, "Thông tin chuyến đi")
-    y -= 18
+    p.setFont(font_name, 12)
+    p.setFillColor(primary_dark)
+    p.drawString(inner_x, inner_y, "Thông tin chuyến đi")
+    inner_y -= 8 * mm
 
     p.setFont(font_name, 11)
+    p.setFillColor(gray_text)
 
-    # --- Tuyến (ưu tiên Trip, sau đó tới PaymentOrder) ---
+    # Tuyến
     if trip and trip.departure_location and trip.arrival_location:
         route_str = f"{trip.departure_location} → {trip.arrival_location}"
     elif order and getattr(order, "from_location", None):
@@ -861,47 +951,53 @@ def download_ticket(request, ticket_id):
         route_str = f"{order.from_location} → {to_loc}"
     else:
         route_str = "(Không xác định)"
-    p.drawString(margin_x, y, f"Tuyến: {route_str}")
-    y -= 16
+    p.drawString(inner_x, inner_y, f"Tuyến: {route_str}")
+    inner_y -= 5 * mm
 
-    # --- Ngày đi ---
+    # Ngày đi
     if trip and getattr(trip, "departure_time", None):
         date_str = trip.departure_time.strftime("%d/%m/%Y")
     elif order and getattr(order, "depart_date", None):
         date_str = str(order.depart_date)
     else:
         date_str = "-"
-    p.drawString(margin_x, y, f"Ngày đi: {date_str}")
-    y -= 16
+    p.drawString(inner_x, inner_y, f"Ngày đi: {date_str}")
+    inner_y -= 5 * mm
 
-    # --- Giờ khởi hành ---
+    # Giờ khởi hành
     if trip and getattr(trip, "departure_time", None):
         time_str = trip.departure_time.strftime("%H:%M")
     elif order and getattr(order, "depart_time", None):
         time_str = str(order.depart_time)
     else:
         time_str = "-"
-    p.drawString(margin_x, y, f"Giờ khởi hành: {time_str}")
-    y -= 16
+    p.drawString(inner_x, inner_y, f"Giờ khởi hành: {time_str}")
+    inner_y -= 5 * mm
 
-    # --- Giờ đến dự kiến (chỉ có nếu Trip có arrival_time) ---
+    # Giờ đến dự kiến
     if trip and getattr(trip, "arrival_time", None):
         arr_str = trip.arrival_time.strftime("%H:%M")
-        p.drawString(margin_x, y, f"Giờ đến dự kiến: {arr_str}")
-        y -= 16
+        p.drawString(inner_x, inner_y, f"Giờ đến dự kiến: {arr_str}")
+        inner_y -= 5 * mm
 
     # Số ghế
-    p.drawString(margin_x, y, f"Số ghế: {ticket.seat_number}")
-    y -= 24
+    p.drawString(inner_x, inner_y, f"Số ghế: {ticket.seat_number}")
+    inner_y -= 8 * mm
 
     # ===== THÔNG TIN THANH TOÁN =====
-    p.setFont(font_name, 13)
-    p.drawString(margin_x, y, "Thông tin thanh toán")
-    y -= 18
+    p.setStrokeColor(gray_border)
+    p.setLineWidth(0.5)
+    p.line(inner_x, inner_y, inner_x + inner_width, inner_y)
+    inner_y -= 6 * mm
+
+    p.setFont(font_name, 12)
+    p.setFillColor(primary_dark)
+    p.drawString(inner_x, inner_y, "Thông tin thanh toán")
+    inner_y -= 8 * mm
 
     p.setFont(font_name, 11)
+    p.setFillColor(gray_text)
 
-    # Giá vé
     price_value = None
     if trip and trip.price is not None:
         price_value = int(trip.price)
@@ -914,8 +1010,8 @@ def download_ticket(request, ticket_id):
 
     if price_value is not None:
         price_str = f"{price_value:,} đ".replace(",", ".")
-        p.drawString(margin_x, y, f"Giá vé: {price_str}")
-        y -= 16
+        p.drawString(inner_x, inner_y, f"Giá vé: {price_str}")
+        inner_y -= 5 * mm
 
     status_map = {
         "upcoming": "Sắp đi",
@@ -923,16 +1019,27 @@ def download_ticket(request, ticket_id):
         "cancelled": "Đã hủy",
     }
     p.drawString(
-        margin_x,
-        y,
+        inner_x,
+        inner_y,
         f"Trạng thái vé: {status_map.get(ticket.status, ticket.status)}",
     )
-    y -= 30
+    inner_y -= 10 * mm
 
-    # ===== QR CHECK-IN =====
-    p.setFont(font_name, 13)
-    p.drawString(margin_x, y, "Mã QR Check-in")
-    y -= 10
+    # ===== Ô QR CHECK-IN BÊN PHẢI =====
+    qr_size = 40 * mm
+    qr_box_w = qr_size + 12 * mm
+    qr_box_h = qr_size + 18 * mm
+    qr_box_x = margin_x + content_width - qr_box_w - 8 * mm
+    qr_box_y = card_bottom + 20 * mm
+
+    p.setStrokeColor(gray_border)
+    p.setFillColor(colors.white)
+    p.setLineWidth(0.8)
+    p.roundRect(qr_box_x, qr_box_y, qr_box_w, qr_box_h, 4 * mm, stroke=1, fill=1)
+
+    p.setFont(font_name, 11)
+    p.setFillColor(gray_text)
+    p.drawString(qr_box_x + 6 * mm, qr_box_y + qr_box_h - 7 * mm, "Mã QR Check-in")
 
     if order and order.ticket_code:
         qr_img = qrcode.make(order.ticket_code)
@@ -941,31 +1048,28 @@ def download_ticket(request, ticket_id):
         img_buffer.seek(0)
         qr_reader = ImageReader(img_buffer)
 
-        qr_size = 40 * mm
         p.drawImage(
             qr_reader,
-            margin_x,
-            y - qr_size,
+            qr_box_x + 6 * mm,
+            qr_box_y + 6 * mm,
             qr_size,
             qr_size,
             preserveAspectRatio=True,
             mask="auto",
         )
-        y = y - qr_size - 20
     else:
-        p.setFont(font_name, 11)
-        p.drawString(margin_x, y, "(Không tìm thấy mã QR cho vé này)")
-        y -= 20
+        p.setFont(font_name, 9)
+        p.setFillColor(colors.red)
+        p.drawString(qr_box_x + 6 * mm, qr_box_y + 10 * mm, "Không tìm thấy mã QR")
 
-    # ===== FOOTER =====
+    # ===== FOOTER NHỎ =====
     p.setFont(font_name, 9)
-    p.setFillGray(0.3)
-    p.drawString(
-        margin_x,
-        margin_y,
+    p.setFillColor(gray_text)
+    footer_text = (
         "Vui lòng mang theo vé (hoặc mã QR / mã vé) khi lên xe để đối chiếu. "
-        "Cảm ơn bạn đã sử dụng dịch vụ của DaNaGO!",
+        "Cảm ơn bạn đã sử dụng dịch vụ của DaNaGO!"
     )
+    p.drawString(margin_x, card_bottom - 10, footer_text)
 
     p.showPage()
     p.save()
@@ -978,53 +1082,219 @@ def download_ticket(request, ticket_id):
     response["Content-Disposition"] = f'attachment; filename=\"{filename}\"'
     return response
 
+from decimal import Decimal
+from django.contrib import messages
+from django.utils import timezone
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.auth.decorators import login_required
+# nhớ đã import Ticket, Trip, PaymentOrder ở trên
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+from django.db import transaction
+from django.utils import timezone
+from .models import Ticket
+@login_required(login_url='login')
+def cancel_ticket(request, ticket_id):
+    """
+    GET: Hiển thị trang xác nhận hủy vé
+    POST: Xử lý hủy vé
 
-@require_POST
-@login_required(login_url="login")
-def cancel_ticket(request, pk):
-    ticket = get_object_or_404(
-        Ticket.objects.select_related("trip"),
-        pk=pk,
-        user=request.user,
-    )
+    Chính sách:
+      - Hủy trước >= 24h: hoàn 100%
+      - 12h <= Hủy < 24h: hoàn 50%
+      - Hủy < 12h: vẫn cho hủy nhưng KHÔNG hoàn tiền
+    """
+    ticket = get_object_or_404(Ticket, id=ticket_id, user=request.user)
 
+    # Chỉ cho hủy vé 'sắp đi'
     if ticket.status != "upcoming":
-        return JsonResponse({"success": False, "message": "Chỉ hủy được vé sắp đi."})
+        messages.error(request, "Chỉ có thể hủy những vé ở mục 'Sắp đi'.")
+        return redirect("my_tickets")
 
-    now = timezone.now()
-    if ticket.trip.departure_time <= now:
-        return JsonResponse({"success": False, "message": "Đã quá giờ khởi hành, không thể hủy."})
+    order = ticket.payment_order
+    trip = ticket.trip
 
-    # Tính % hoàn tiền
-    diff_hours = (ticket.trip.departure_time - now).total_seconds() / 3600
-    if diff_hours >= 24:
-        refund_percent = 100
-    elif diff_hours >= 12:
-        refund_percent = 50
-    else:
-        refund_percent = 0  # dưới 12h thì không hoàn
+    # ================= XÁC ĐỊNH GIỜ KHỞI HÀNH =================
+    departure_dt = None
 
-    # TODO: xử lý hoàn tiền thật (ghi log, gửi mail, …)
-    ticket.status = "cancelled"
-    ticket.save(update_fields=["status"])
+    # 1) Ticket có trip & departure_time
+    if trip and getattr(trip, "departure_time", None):
+        departure_dt = trip.departure_time
 
-    msg = f"Hủy vé thành công. Tỷ lệ hoàn tiền: {refund_percent}% (xử lý trong 3-5 ngày)."
-    return JsonResponse({"success": True, "message": msg, "refund_percent": refund_percent})
+    # 2) Ticket không có trip nhưng PaymentOrder có trip
+    elif order and order.trip and getattr(order.trip, "departure_time", None):
+        trip = order.trip
+        departure_dt = order.trip.departure_time
+
+    # 3) Không có trip nhưng PaymentOrder có depart_date + depart_time (vd "27-11", "06:32")
+    elif order and order.depart_date and order.depart_time:
+        try:
+            raw = f"{order.depart_date} {order.depart_time}"  # "27-11 06:32"
+            year = order.created_at.year
+            naive = datetime.strptime(raw, "%d-%m %H:%M")
+            naive = naive.replace(year=year)
+            tz = timezone.get_current_timezone()
+            departure_dt = tz.localize(naive)
+        except Exception:
+            departure_dt = None
+
+    # ================= TÍNH GIÁ VÉ GỐC =================
+    seat_price = 0
+
+    if trip and getattr(trip, "price", None) is not None:
+        seat_price = int(trip.price)
+    elif order:
+        if getattr(order, "price_each", None):
+            seat_price = int(order.price_each)
+        else:
+            # fallback: chia đều tổng tiền cho số ghế
+            try:
+                seats = [s.strip() for s in order.seats.split(",") if s.strip()]
+                seat_count = max(len(seats), 1)
+                seat_price = int(order.amount / seat_count)
+            except Exception:
+                seat_price = int(order.amount)
+
+    # ================= TÍNH THỜI GIAN & HOÀN TIỀN =================
+    diff_hours = None
+    refund_percent = 0
+
+    if departure_dt:
+        now = timezone.now()
+        diff = departure_dt - now
+        diff_hours = diff.total_seconds() / 3600
+
+        # Chính sách hoàn:
+        if diff_hours >= 24:
+            refund_percent = 100
+        elif diff_hours >= 12:
+            refund_percent = 50
+        else:
+            refund_percent = 0   # < 12h: vẫn hủy được nhưng không hoàn tiền
+
+    # Phí hủy & số tiền hoàn lại
+    fee_percent = 100 - refund_percent
+    refund_fee = round(seat_price * fee_percent / 100) if seat_price else 0
+    refund_amount = max(seat_price - refund_fee, 0)
+
+    # ================= POST: XỬ LÝ HỦY VÉ =================
+    if request.method == "POST":
+        confirm = request.POST.get("confirm")
+
+        if not confirm:
+            messages.error(request, "Vui lòng xác nhận hủy vé.")
+            return redirect("cancel_ticket", ticket_id=ticket_id)
+
+        # PHƯƠNG ÁN B: luôn cho hủy, kể cả < 12h (refund_amount lúc đó = 0)
+        with transaction.atomic():
+            ticket.status = "cancelled"
+            ticket.save(update_fields=["status"])
+            # Nếu muốn, bạn xử lý log hoàn tiền / ví / v.v. ở đây
+
+        messages.success(
+            request,
+            (
+                f"✅ Hủy vé thành công! Số tiền hoàn lại: {int(refund_amount):,}đ "
+                f"(Phí hủy: {int(refund_fee):,}đ)"
+            ).replace(",", "."),
+        )
+        return redirect("my_tickets")
+
+    # ================= GET: HIỂN THỊ TRANG XÁC NHẬN =================
+    context = {
+        "ticket": ticket,
+        "trip": trip,
+        "order": order,
+        "seat_price": int(seat_price),
+        "diff_hours": round(diff_hours, 1) if diff_hours is not None else None,
+        "refund_percent": refund_percent,
+        "fee_percent": fee_percent,
+        "refund_amount": int(refund_amount),
+        "refund_fee": int(refund_fee),
+        "can_cancel": True,   # phương án B: luôn cho hủy
+    }
+    return render(request, "ticket/cancel_ticket.html", context)
+
+
+
+from urllib.parse import urlencode
+from django.urls import reverse
+from django.contrib import messages
+from django.shortcuts import get_object_or_404, redirect
+from django.contrib.auth.decorators import login_required
+
+from .models import Ticket
+
+
+from urllib.parse import urlencode
+from django.urls import reverse
+from django.contrib import messages
+from django.shortcuts import get_object_or_404, redirect
+from django.contrib.auth.decorators import login_required
+from django.utils import timezone
+from datetime import date
+
+from .models import Ticket
+
+
 @login_required(login_url="login")
 def rebook_ticket(request, pk):
     ticket = get_object_or_404(
-        Ticket.objects.select_related("trip"),
+        Ticket.objects.select_related("trip", "payment_order"),
         pk=pk,
         user=request.user,
     )
-    trip = ticket.trip
 
-    # chuyển về trang index hoặc search, kèm sẵn from/to
-    url = (
-        f"{reverse('index')}"
-        f"?from={trip.departure_location}"
-        f"&to={trip.arrival_location}"
-    )
+    trip = ticket.trip
+    order = ticket.payment_order
+
+    from_loc = ""
+    to_loc = ""
+    dep_date_str = None  # YYYY-MM-DD
+
+    if trip:
+        from_loc = trip.departure_location
+        to_loc = trip.arrival_location
+        if trip.departure_time:
+            dep_date_str = trip.departure_time.date().isoformat()  # yyyy-mm-dd
+    elif order:
+        from_loc = order.from_location or ""
+        to_loc = order.to_location or ""
+        # order.depart_date đang kiểu "27-11" (dd-MM), ta convert sang yyyy-MM-dd
+        if order.depart_date:
+            try:
+                day, month = order.depart_date.split("-")
+                year = timezone.now().year
+                d = date(year=int(year), month=int(month), day=int(day))
+                dep_date_str = d.isoformat()
+            except Exception:
+                dep_date_str = None
+
+    if not from_loc or not to_loc:
+        messages.error(request, "Không tìm được tuyến đường để đặt lại.")
+        return redirect("my_tickets")
+
+    # Nếu ngày trong quá khứ thì đẩy về hôm nay cho chắc,
+    # vì JS của bạn không cho chọn ngày < hôm nay
+    today = timezone.now().date()
+    if dep_date_str:
+        try:
+            y, m, d = dep_date_str.split("-")
+            dep_d = date(int(y), int(m), int(d))
+            if dep_d < today:
+                dep_date_str = today.isoformat()
+        except Exception:
+            dep_date_str = today.isoformat()
+
+    params = {
+        "from_location": from_loc,
+        "to_location": to_loc,
+    }
+    if dep_date_str:
+        params["departure_date"] = dep_date_str
+
+    url = f"{reverse('index')}?{urlencode(params)}"
     return redirect(url)
 
 @require_POST

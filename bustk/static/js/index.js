@@ -16,10 +16,16 @@ const provinces = [
 ];
 
 $(document).ready(function () {
-    // ================== 1. GÁN OPTIONS TỈNH/THÀNH ==================
     const $from = $('#from_location');
     const $to = $('#to_location');
 
+    // ================== 0. ĐỌC QUERY STRING (dùng cho ĐẶT LẠI) ==================
+    // URL kiểu: /?from=TP Hồ Chí Minh&to=Bà Rịa - Vũng Tàu
+    const urlParams   = new URLSearchParams(window.location.search);
+    const fromPrefill = urlParams.get("from");  // dùng from
+    const toPrefill   = urlParams.get("to");    // dùng to
+
+    // ================== 1. GÁN OPTIONS TỈNH/THÀNH ==================
     provinces.forEach(function (p) {
         $from.append(new Option(p, p, false, false));
         $to.append(new Option(p, p, false, false));
@@ -95,6 +101,25 @@ $(document).ready(function () {
     const today = new Date().toISOString().split('T')[0];
     $('#departure_date, #return_date').attr('min', today);
 
+    // ================== 5.1 PREFILL from/to TỪ URL & AUTO TÌM ==================
+    const $form = $('.search-form form');
+
+    if (fromPrefill) {
+        $from.val(fromPrefill).trigger('change');
+    }
+    if (toPrefill) {
+        $to.val(toPrefill).trigger('change');
+    }
+
+    // Nếu có from & to → tự set ngày = hôm nay + tự submit form tìm chuyến
+    if (fromPrefill && toPrefill) {
+        $('#departure_date').val(today);
+        // cho Select2 render xong rồi mới submit để tránh race
+        setTimeout(function () {
+            $form.trigger('submit');
+        }, 100);
+    }
+
     // ================== 6. LOGIC TÌM KIẾM GIẢ LẬP + FILTER ==================
     const resultsContainer = $('#search-results-container');
     const resultsDiv = $('#search-results');
@@ -113,80 +138,78 @@ $(document).ready(function () {
     }
 
     function isSameDate(a, b) {
-    return a.getFullYear() === b.getFullYear() &&
-           a.getMonth()    === b.getMonth() &&
-           a.getDate()     === b.getDate();
-}
-
-function generateRandomTrips(fromLocation, toLocation, departureDate, numTrips) {
-    const vehicleTypes = ['Giường nằm', 'Ghế ngồi', 'Limousine', 'Xe giường VIP', 'Xe khách 45 chỗ'];
-    const vehicleTypeMap = {
-        'Ghế ngồi': 'Ghế',
-        'Giường nằm': 'Giường',
-        'Xe giường VIP': 'Giường',
-        'Limousine': 'Limousine',
-        'Xe khách 45 chỗ': 'Ghế'
-    };
-
-    const seatRows = ['front', 'middle', 'back'];
-    const floors   = ['upper', 'lower'];
-
-    const trips = [];
-    const now   = new Date();
-
-    // cho phép loop thêm để đủ số chuyến hợp lệ
-    let tries = 0;
-    const maxTries = numTrips * 3;
-
-    while (trips.length < numTrips && tries < maxTries) {
-        tries++;
-
-        const departureHour   = randomInt(5, 22);
-        const departureMinute = randomInt(0, 59);
-
-        const durationHours   = randomInt(2, 12);
-        const durationMinutes = randomInt(0, 59);
-
-        const departureDateTime = new Date(departureDate);
-        departureDateTime.setHours(departureHour, departureMinute, 0, 0);
-
-        // NẾU LÀ NGÀY HÔM NAY và thời gian khởi hành < 40 phút nữa → bỏ qua
-        if (isSameDate(departureDateTime, now)) {
-            const diffMin = (departureDateTime - now) / 60000; // phút
-            if (diffMin < 40) {
-                continue; // không push chuyến này
-            }
-        }
-
-        const arrivalDateTime = new Date(departureDateTime);
-        arrivalDateTime.setHours(arrivalDateTime.getHours() + durationHours);
-        arrivalDateTime.setMinutes(arrivalDateTime.getMinutes() + durationMinutes);
-
-        const vehicleType = vehicleTypes[randomInt(0, vehicleTypes.length - 1)];
-
-        trips.push({
-            id: randomInt(1000, 9999),
-            departure_location: fromLocation,
-            arrival_location: toLocation,
-            departure_time: departureDateTime.toISOString(),
-            arrival_time: arrivalDateTime.toISOString(),
-            vehicle_type: vehicleType,
-            vehicle_type_filter: vehicleTypeMap[vehicleType] || 'Ghế',
-            available_seats: randomInt(8, 45),
-            price: randomInt(250000, 1500000),
-            seat_row: seatRows[randomInt(0, seatRows.length - 1)],
-            floor: floors[randomInt(0, floors.length - 1)]
-        });
+        return a.getFullYear() === b.getFullYear() &&
+               a.getMonth()    === b.getMonth() &&
+               a.getDate()     === b.getDate();
     }
 
-    // sắp xếp theo giờ đi
-    return trips.sort((a, b) => new Date(a.departure_time) - new Date(b.departure_time));
-}
+    function generateRandomTrips(fromLocation, toLocation, departureDate, numTrips) {
+        const vehicleTypes = ['Giường nằm', 'Ghế ngồi', 'Limousine', 'Xe giường VIP', 'Xe khách 45 chỗ'];
+        const vehicleTypeMap = {
+            'Ghế ngồi': 'Ghế',
+            'Giường nằm': 'Giường',
+            'Xe giường VIP': 'Giường',
+            'Limousine': 'Limousine',
+            'Xe khách 45 chỗ': 'Ghế'
+        };
 
+        const seatRows = ['front', 'middle', 'back'];
+        const floors   = ['upper', 'lower'];
+
+        const trips = [];
+        const now   = new Date();
+
+        // cho phép loop thêm để đủ số chuyến hợp lệ
+        let tries = 0;
+        const maxTries = numTrips * 3;
+
+        while (trips.length < numTrips && tries < maxTries) {
+            tries++;
+
+            const departureHour   = randomInt(5, 22);
+            const departureMinute = randomInt(0, 59);
+
+            const durationHours   = randomInt(2, 12);
+            const durationMinutes = randomInt(0, 59);
+
+            const departureDateTime = new Date(departureDate);
+            departureDateTime.setHours(departureHour, departureMinute, 0, 0);
+
+            // NẾU LÀ NGÀY HÔM NAY và thời gian khởi hành < 40 phút nữa → bỏ qua
+            if (isSameDate(departureDateTime, now)) {
+                const diffMin = (departureDateTime - now) / 60000; // phút
+                if (diffMin < 40) {
+                    continue; // không push chuyến này
+                }
+            }
+
+            const arrivalDateTime = new Date(departureDateTime);
+            arrivalDateTime.setHours(arrivalDateTime.getHours() + durationHours);
+            arrivalDateTime.setMinutes(arrivalDateTime.getMinutes() + durationMinutes);
+
+            const vehicleType = vehicleTypes[randomInt(0, vehicleTypes.length - 1)];
+
+            trips.push({
+                id: randomInt(1000, 9999),
+                departure_location: fromLocation,
+                arrival_location: toLocation,
+                departure_time: departureDateTime.toISOString(),
+                arrival_time: arrivalDateTime.toISOString(),
+                vehicle_type: vehicleType,
+                vehicle_type_filter: vehicleTypeMap[vehicleType] || 'Ghế',
+                available_seats: randomInt(8, 45),
+                price: randomInt(250000, 1500000),
+                seat_row: seatRows[randomInt(0, seatRows.length - 1)],
+                floor: floors[randomInt(0, floors.length - 1)]
+            });
+        }
+
+        // sắp xếp theo giờ đi
+        return trips.sort((a, b) => new Date(a.departure_time) - new Date(b.departure_time));
+    }
 
     // Submit form tìm kiếm
-    const form = $('.search-form form')[0];
-    form.addEventListener('submit', function (e) {
+    $form.on('submit', function (e) {
         e.preventDefault();
 
         const fromLocation = $('#from_location').val();

@@ -45,7 +45,8 @@
             </div>
 
             <!-- Form tìm chuyến -->
-            <form method="GET" action="{% url 'search_trips' %}">
+            <form method="GET" action="{% url 'search_trips' %}" id="trip-search-form">
+
                 <div class="row g-3 align-items-end mb-3" id="input-row">
                     <!-- Điểm đi -->
                     <div class="col-lg-3 col-md-6">
@@ -250,9 +251,13 @@
                                 {% endfor %}
                             </div>
 
-                            <button class="btn btn-book-route">
-                                Chọn tuyến
-                            </button>
+                            <button type="button"
+        class="btn btn-book-route"
+        data-from="{{ group.from_location }}"
+        data-to="{{ d.to_location }}">
+    Chọn tuyến
+</button>
+
                         </div>
                     </div>
                 </div>
@@ -274,5 +279,6 @@
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/i18n/vi.js"></script>
 
     <!-- JS trang chủ -->
-    <script src="{% static 'js/index.js' %}"></script>
+    <script src="{% static 'js/index.js' %}?v=3"></script>
+
 {% endblock %}
