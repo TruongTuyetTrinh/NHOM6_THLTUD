@@ -19,6 +19,7 @@ urlpatterns = [
     path("my-tickets/", views.my_tickets, name="my_tickets"),
     path('ticket/<int:ticket_id>/download/', views.download_ticket, name='download_ticket'),
     path('ticket/<int:ticket_id>/cancel/', views.cancel_ticket, name='cancel_ticket'),
+path("ticket/<int:pk>/rebook/", views.rebook_ticket, name="rebook_ticket"),
 
     # urls.py
     path("ticket/<int:pk>/rebook/", views.rebook_ticket, name="rebook_ticket"),

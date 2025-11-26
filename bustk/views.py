@@ -27,6 +27,8 @@ from reportlab.pdfbase.ttfonts import TTFont
 from django.conf import settings
 import os
 
+from django.utils import timezone
+from datetime import datetime
 
 from .models import Ticket, Trip, PaymentOrder  # nếu chưa import
 from django.shortcuts import get_object_or_404
@@ -761,6 +763,10 @@ def profile_settings(request):
 
     return render(request, 'ticket/profile_settings.html')
 
+from django.utils import timezone
+from datetime import datetime
+from django.db.models import Q
+
 @login_required(login_url="login")
 def my_tickets(request):
     """
@@ -768,15 +774,63 @@ def my_tickets(request):
     - upcoming: sắp đi
     - completed: đã đi
     - cancelled: đã hủy
+
+    + Tự động chuyển vé từ 'upcoming' -> 'completed' khi đã qua giờ khởi hành.
     """
+    now = timezone.now()
+
+    # ==== 1. AUTO CHUYỂN VÉ CÓ TRIP ====
+    # Vé có trip, nếu departure_time <= now thì coi như ĐÃ ĐI
+    Ticket.objects.filter(
+        status="upcoming",
+        trip__isnull=False,
+        trip__departure_time__lte=now,
+    ).update(status="completed")
+
+    # ==== 2. AUTO CHUYỂN VÉ CHỈ GẮN PAYMENT_ORDER (không có trip) ====
+    # Những vé này không có datetime chuẩn, phải tự parse từ depart_date / depart_time dạng chuỗi
+    upcoming_no_trip = (
+        Ticket.objects
+        .filter(
+            status="upcoming",
+            trip__isnull=True,
+            payment_order__isnull=False,
+            user=request.user,
+        )
+        .select_related("payment_order")
+    )
+
+    cur_tz = timezone.get_current_timezone()
+    cur_year = now.year
+
+    for t in upcoming_no_trip:
+        od = t.payment_order
+
+        if not od.depart_date or not od.depart_time:
+            continue
+
+        # depart_date dạng "27-11", depart_time dạng "06:30"
+        try:
+            dt_naive = datetime.strptime(
+                f"{od.depart_date} {od.depart_time} {cur_year}",
+                "%d-%m %H:%M %Y",
+            )
+            depart_dt = timezone.make_aware(dt_naive, cur_tz)
+        except Exception:
+            continue
+
+        if depart_dt <= now:
+            t.status = "completed"
+            t.save(update_fields=["status"])
+
+    # ==== 3. LỌC THEO TAB NHƯ CŨ ====
     tab = request.GET.get("tab", "upcoming")
 
-    # tất cả vé của user
     base_qs = (
         Ticket.objects
         .filter(user=request.user)
         .select_related("trip", "payment_order")
-        .order_by("-trip__departure_time")
+        .order_by("-trip__departure_time", "-booking_date")
     )
 
     upcoming_qs  = base_qs.filter(status="upcoming")
@@ -800,6 +854,7 @@ def my_tickets(request):
         "cancelled_count": cancelled_qs.count(),
     }
     return render(request, "ticket/my_tickets.html", context)
+
 from io import BytesIO
 import os
 import qrcode

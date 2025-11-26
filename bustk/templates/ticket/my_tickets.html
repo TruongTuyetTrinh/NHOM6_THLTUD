@@ -176,31 +176,23 @@
                 </div>
                 {% endif %}
                 <!-- Hàng 3: Hành động theo trạng thái -->
+                                <!-- Hành động theo trạng thái -->
                 <div class="ticket-actions">
-                    {% if ticket.status == 'upcoming' %}
-                        <!-- Vé SẮP ĐI: QR + tải vé + hủy nếu đủ điều kiện -->
-<!--                        <button type="button"-->
-<!--                                class="btn btn-outline-primary btn-sm js-show-ticket-qr"-->
-<!--                                data-ticket-id="{{ ticket.id }}"-->
-<!--                                {% if ticket.payment_order and ticket.payment_order.ticket_code %}-->
-<!--                                data-ticket-code="{{ ticket.payment_order.ticket_code }}"-->
-<!--                                {% endif %}>-->
-<!--                            Hiển thị QR vé-->
-<!--                        </button>-->
 
+                    {% if ticket.status == 'upcoming' %}
+                        <!-- Vé SẮP ĐI -->
                         <a href="{% url 'download_ticket' ticket.id %}"
                            class="btn btn-secondary btn-sm">
                             Tải vé (PDF)
                         </a>
 
-                       <a href="{% url 'cancel_ticket' ticket.id %}"
-   class="btn btn-danger btn-sm">
-    Hủy vé
-</a>
-
+                        <a href="{% url 'cancel_ticket' ticket.id %}"
+                           class="btn btn-danger btn-sm">
+                            Hủy vé
+                        </a>
 
                     {% elif ticket.status == 'completed' %}
-                        <!-- Vé ĐÃ ĐI: tải vé + đánh giá + đặt lại -->
+                        <!-- Vé ĐÃ ĐI -->
                         <a href="{% url 'download_ticket' ticket.id %}"
                            class="btn btn-secondary btn-sm">
                             Tải vé (PDF)
@@ -212,21 +204,21 @@
                             Đánh giá chuyến đi
                         </button>
 
+                        <!-- Đặt lại (logic giống thẻ ĐÃ HỦY) -->
                         {% if ticket.payment_order and ticket.payment_order.from_location %}
-                            <a href="{% url 'rebook_ticket' ticket.id %}"
-       class="btn btn-outline-primary btn-sm">
-        Đặt lại
-    </a>
-
-{% elif ticket.status == 'cancelled' %}
-    <a href="{% url 'rebook_ticket' ticket.id %}"
-       class="btn btn-outline-primary btn-sm">
-        Đặt lại
-    </a>
-{% endif %}
+                            <a href="{% url 'index' %}?from={{ ticket.payment_order.from_location|urlencode }}&to={{ ticket.payment_order.to_location|urlencode }}"
+                               class="btn btn-outline-primary btn-sm">
+                                Đặt lại
+                            </a>
+                        {% elif ticket.trip %}
+                            <a href="{% url 'index' %}?from={{ ticket.trip.departure_location|urlencode }}&to={{ ticket.trip.arrival_location|urlencode }}"
+                               class="btn btn-outline-primary btn-sm">
+                                Đặt lại
+                            </a>
+                        {% endif %}
 
                     {% elif ticket.status == 'cancelled' %}
-                        <!-- Vé ĐÃ HỦY: chỉ đặt lại -->
+                        <!-- Vé ĐÃ HỦY -->
                         {% if ticket.payment_order and ticket.payment_order.from_location %}
                             <a href="{% url 'index' %}?from={{ ticket.payment_order.from_location|urlencode }}&to={{ ticket.payment_order.to_location|urlencode }}"
                                class="btn btn-outline-primary btn-sm">
@@ -239,7 +231,9 @@
                             </a>
                         {% endif %}
                     {% endif %}
+
                 </div>
+
             </div>
             {% endfor %}
         {% else %}

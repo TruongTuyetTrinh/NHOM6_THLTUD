@@ -111,7 +111,16 @@ class TicketAdmin(admin.ModelAdmin):
     get_ticket_code.short_description = 'Mã vé'
 
     def get_trip_info(self, obj):
-        return f"{obj.trip.departure_location} → {obj.trip.arrival_location}"
+        # Nếu có trip thì ưu tiên dùng trip
+        if obj.trip:
+            return f"{obj.trip.departure_location} → {obj.trip.arrival_location}"
+
+        # Nếu không có trip nhưng có payment_order thì fallback sang từ đơn hàng
+        if obj.payment_order and obj.payment_order.from_location:
+            to_loc = obj.payment_order.to_location or ""
+            return f"{obj.payment_order.from_location} → {to_loc}"
+
+        return "-"
 
     get_trip_info.short_description = 'Tuyến đường'
 
