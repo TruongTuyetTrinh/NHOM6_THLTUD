@@ -107,6 +107,9 @@ class Ticket(models.Model):
         on_delete=models.SET_NULL,
         related_name='tickets'
     )
+    reminder_30m_sent = models.BooleanField(default=False)
+    started_notified = models.BooleanField(default=False)
+    completed_notified = models.BooleanField(default=False)
 
     def __str__(self):
         return f"Ticket {self.id} - {self.user.username}"
@@ -136,6 +139,7 @@ class Message(models.Model):
     )
     sender_name = models.CharField(max_length=100, default='BusTicket Support')
     content = models.TextField()
+    image = models.ImageField(upload_to='messages/', blank=True, null=True)
     is_from_user = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 

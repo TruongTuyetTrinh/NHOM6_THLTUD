@@ -37,6 +37,11 @@ from django.template.loader import get_template
 from django.contrib.auth.decorators import login_required
 from xhtml2pdf import pisa
 
+from django.views.decorators.http import require_POST
+from django.http import JsonResponse
+from django.db.models import Avg, Count
+
+from .models import Ticket, Trip, Feedback
 
 # === THÊM 3 DÒNG NÀY (CHỈ CẦN THÊM, KHÔNG SỬA GÌ KHÁC) ===
 import random
@@ -681,13 +686,9 @@ def schedules(request):
 def notifications(request):
     return render(request, 'ticket/notifications.html')
 
-@login_required(login_url='login')
-def messages(request):
-    return render(request, 'ticket/messages.html')
-
-@login_required(login_url='login')
-def feedback(request):
-    return render(request, 'ticket/feedback.html')
+# @login_required(login_url='login')
+# def messages(request):
+#     return render(request, 'ticket/messages.html')
 
 @login_required(login_url='login')
 def notification_settings(request):
@@ -1246,7 +1247,18 @@ def cancel_ticket(request, ticket_id):
             ticket.status = "cancelled"
             ticket.save(update_fields=["status"])
             # Nếu muốn, bạn xử lý log hoàn tiền / ví / v.v. ở đây
-
+            if trip:  # phòng khi trip = None
+                Notification.objects.create(
+                    user=request.user,
+                    ticket=ticket,
+                    trip=trip,
+                    type=Notification.Type.CANCEL_SUCCESS,
+                    title="Hủy vé thành công",
+                    body=(
+                        f"Bạn đã hủy vé chuyến {trip.departure_location} → {trip.arrival_location} "
+                        f"lúc {trip.departure_time:%H:%M %d/%m/%Y}."
+                    ),
+                )
         messages.success(
             request,
             (
@@ -1351,151 +1363,257 @@ def rebook_ticket(request, pk):
 
     url = f"{reverse('index')}?{urlencode(params)}"
     return redirect(url)
-
-@require_POST
 @login_required(login_url="login")
-def ticket_review(request, pk):
+@require_POST
+def submit_review(request, ticket_id):
+    """
+    Nhận đánh giá từ modal, tạo Feedback và trả về URL trang review của tuyến.
+    """
     ticket = get_object_or_404(
-        Ticket.objects.select_related("trip"),
-        pk=pk,
+        Ticket.objects.select_related("trip", "payment_order"),
+        id=ticket_id,
         user=request.user,
     )
 
-    # chỉ cho đánh giá vé đã đi
-    if ticket.status != "completed":
-        return JsonResponse({"success": False, "message": "Chỉ đánh giá được chuyến đã hoàn thành."})
+    trip = ticket.trip
 
-    rating = int(request.POST.get("rating", 5))
-    title  = request.POST.get("title", "").strip()
-    content = request.POST.get("content", "").strip()
-    image   = request.FILES.get("image")
+    # 🔹 Nếu ticket không có trip, thử dò theo payment_order.from/to
+    if not trip and ticket.payment_order and ticket.payment_order.from_location and ticket.payment_order.to_location:
+        po = ticket.payment_order
+        trip = (
+            Trip.objects
+            .filter(
+                departure_location=po.from_location,
+                arrival_location=po.to_location,
+            )
+            .order_by("-departure_time")
+            .first()
+        )
 
-    if not title or not content:
-        return JsonResponse({"success": False, "message": "Vui lòng nhập tiêu đề và nội dung."})
+    # Nếu vẫn không có trip thì chịu
+    if not trip:
+        return JsonResponse(
+            {"status": "error", "message": "Không tìm thấy chuyến đi để đánh giá."},
+            status=400,
+        )
+
+    # -------- LẤY DỮ LIỆU FORM --------
+    try:
+        rating = int(request.POST.get("rating", 5))
+    except ValueError:
+        rating = 5
+    rating = max(1, min(5, rating))
+
+    title = (request.POST.get("title") or "").strip()
+    content = (request.POST.get("content") or "").strip()
+    image_file = request.FILES.get("image")
 
     Feedback.objects.create(
         user=request.user,
-        trip=ticket.trip,
+        trip=trip,
         rating=rating,
-        title=title,
+        title=title or "Không có tiêu đề",
         content=content,
-        image=image,
+        image=image_file,
     )
 
-    return JsonResponse({"success": True, "message": "Cảm ơn bạn đã gửi đánh giá!"})
+    redirect_url = reverse("route_reviews", args=[trip.id])
+    return JsonResponse({"status": "success", "redirect_url": redirect_url})
 
-# # views.py
-# from django.shortcuts import render, redirect
-# from django.contrib.auth.decorators import login_required
-# from django.contrib import messages as django_messages
-# from django.http import JsonResponse
-# from .models import Message
-# from .forms import MessageForm
-#
-#
-# @login_required
-# def message_list(request):
-#     """Hiển thị danh sách tin nhắn của user"""
-#     user_messages = Message.objects.filter(user=request.user)
-#
-#     if request.method == 'POST':
-#         form = MessageForm(request.POST, request.FILES)
-#         if form.is_valid():
-#             message = form.save(commit=False)
-#             message.user = request.user
-#             message.sender_name = request.user.username
-#             message.is_from_user = True
-#             message.save()
-#             django_messages.success(request, 'Tin nhắn đã được gửi!')
-#             return redirect('message_list')
-#     else:
-#         form = MessageForm()
-#
-#     context = {
-#         'messages': user_messages,
-#         'form': form
-#     }
-#     return render(request, 'messages/message_list.html', context)
-#
-#
-# @login_required
-# def send_message(request):
-#     """API endpoint để gửi tin nhắn (AJAX)"""
-#     if request.method == 'POST':
-#         content = request.POST.get('content', '').strip()
-#         image = request.FILES.get('image')
-#
-#         if content or image:
-#             message = Message.objects.create(
-#                 user=request.user,
-#                 sender_name=request.user.username,
-#                 content=content if content else '',
-#                 image=image,
-#                 is_from_user=True
-#             )
-#
-#             return JsonResponse({
-#                 'success': True,
-#                 'message': {
-#                     'id': message.id,
-#                     'sender_name': message.sender_name,
-#                     'content': message.content,
-#                     'image_url': message.image.url if message.image else None,
-#                     'is_from_user': message.is_from_user,
-#                     'created_at': message.created_at.strftime('%d/%m/%Y %H:%M')
-#                 }
-#             })
-#
-#         return JsonResponse({
-#             'success': False,
-#             'error': 'Vui lòng nhập nội dung hoặc chọn ảnh'
-#         })
-#
-#     return JsonResponse({'success': False, 'error': 'Invalid request method'})
-#
-#
-# @login_required
-# def get_messages(request):
-#     """API endpoint để lấy danh sách tin nhắn (AJAX)"""
-#     messages_list = Message.objects.filter(user=request.user)
-#
-#     messages_data = [{
-#         'id': msg.id,
-#         'sender_name': msg.sender_name,
-#         'content': msg.content,
-#         'image_url': msg.image.url if msg.image else None,
-#         'is_from_user': msg.is_from_user,
-#         'created_at': msg.created_at.strftime('%d/%m/%Y %H:%M')
-#     } for msg in messages_list]
-#
-#     return JsonResponse({
-#         'success': True,
-#         'messages': messages_data
-#     })
-#
-#
-# @login_required
-# def delete_message(request, message_id):
-#     """Xóa tin nhắn"""
-#     if request.method == 'POST':
-#         try:
-#             message = Message.objects.get(id=message_id, user=request.user)
-#
-#             # Xóa file ảnh nếu có
-#             if message.image:
-#                 message.image.delete()
-#
-#             message.delete()
-#
-#             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-#                 return JsonResponse({'success': True})
-#
-#             django_messages.success(request, 'Tin nhắn đã được xóa!')
-#         except Message.DoesNotExist:
-#             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-#                 return JsonResponse({'success': False, 'error': 'Tin nhắn không tồn tại'})
-#
-#             django_messages.error(request, 'Tin nhắn không tồn tại!')
-#
-#     return redirect('message_list')
+@login_required(login_url="login")
+def route_reviews(request, trip_id):
+    """
+    Trang hiển thị tất cả đánh giá của mọi khách cho CÙNG TUYẾN:
+    cùng departure_location & arrival_location (không giới hạn ngày).
+    """
+    base_trip = get_object_or_404(Trip, id=trip_id)
+
+    feedback_qs = (
+        Feedback.objects
+        .filter(
+            trip__departure_location=base_trip.departure_location,
+            trip__arrival_location=base_trip.arrival_location,
+        )
+        .select_related("user", "trip")
+        .order_by("-created_at")
+    )
+
+    agg = feedback_qs.aggregate(
+        avg_rating=Avg("rating"),
+        total=Count("id"),
+    )
+
+    context = {
+        "base_trip": base_trip,
+        "feedbacks": feedback_qs,
+        "avg_rating": agg["avg_rating"] or 0,
+        "total_reviews": agg["total"] or 0,
+    }
+    return render(request, "ticket/route_reviews.html", context)
+@login_required(login_url="login")
+def my_reviews_entry(request):
+    """
+    Khi bấm menu 'Đánh giá' trên header:
+    - Nếu user đã từng đánh giá: nhảy tới tuyến của feedback mới nhất
+    - Nếu chưa có feedback nhưng có vé 'đã đi': nhảy tới tuyến của vé đã đi gần nhất
+    - Nếu chưa đi/chưa đánh giá: quay về 'Vé của tôi'
+    """
+    # 1) Ưu tiên feedback mới nhất
+    fb = (
+        Feedback.objects
+        .filter(user=request.user)
+        .select_related("trip")
+        .order_by("-created_at")
+        .first()
+    )
+    if fb and fb.trip:
+        return redirect("route_reviews", trip_id=fb.trip.id)
+
+    # 2) Nếu chưa có feedback, lấy vé đã đi gần nhất
+    ticket = (
+        Ticket.objects
+        .filter(user=request.user, status="completed")
+        .select_related("trip")
+        .order_by("-trip__departure_time")
+        .first()
+    )
+    if ticket and ticket.trip:
+        return redirect("route_reviews", trip_id=ticket.trip.id)
+
+    # 3) Không có gì để review → quay lại Vé của tôi
+    return redirect(f"{reverse('my_tickets')}?tab=upcoming")
+# views.py
+from django.shortcuts import render, redirect
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages as django_messages
+from django.http import JsonResponse
+from .models import Message
+from .forms import MessageForm
+
+@login_required
+def message_list(request):
+    user_messages = Message.objects.filter(user=request.user).order_by('created_at')
+
+    if request.method == 'POST':
+        form = MessageForm(request.POST, request.FILES)
+        if form.is_valid():
+            msg = form.save(commit=False)
+            msg.user = request.user
+            msg.sender_name = request.user.username
+            msg.is_from_user = True
+            msg.save()
+            return redirect('message_list')
+    else:
+        form = MessageForm()
+
+    return render(request, 'ticket/messages.html', {
+        'messages': user_messages,
+        'form': form,
+    })
+
+@login_required
+def message_list(request):
+    """Hiển thị danh sách tin nhắn của user"""
+    user_messages = Message.objects.filter(user=request.user)
+
+    if request.method == 'POST':
+        form = MessageForm(request.POST, request.FILES)
+        if form.is_valid():
+            message = form.save(commit=False)
+            message.user = request.user
+            message.sender_name = request.user.username
+            message.is_from_user = True
+            message.save()
+            django_messages.success(request, 'Tin nhắn đã được gửi!')
+            return redirect('message_list')
+    else:
+        form = MessageForm()
+
+    context = {
+        'messages': user_messages,
+        'form': form
+    }
+    return render(request, 'ticket/messages.html', context)
+
+
+@login_required
+def send_message(request):
+    """API endpoint để gửi tin nhắn (AJAX)"""
+    if request.method == 'POST':
+        content = request.POST.get('content', '').strip()
+        image = request.FILES.get('image')
+
+        if content or image:
+            message = Message.objects.create(
+                user=request.user,
+                sender_name=request.user.username,
+                content=content if content else '',
+                image=image,
+                is_from_user=True
+            )
+
+            return JsonResponse({
+                'success': True,
+                'message': {
+                    'id': message.id,
+                    'sender_name': message.sender_name,
+                    'content': message.content,
+                    'image_url': message.image.url if message.image else None,
+                    'is_from_user': message.is_from_user,
+                    'created_at': message.created_at.strftime('%d/%m/%Y %H:%M')
+                }
+            })
+
+        return JsonResponse({
+            'success': False,
+            'error': 'Vui lòng nhập nội dung hoặc chọn ảnh'
+        })
+
+    return JsonResponse({'success': False, 'error': 'Invalid request method'})
+
+
+@login_required
+def get_messages(request):
+    """API endpoint để lấy danh sách tin nhắn (AJAX)"""
+    messages_list = Message.objects.filter(user=request.user)
+
+    messages_data = [{
+        'id': msg.id,
+        'sender_name': msg.sender_name,
+        'content': msg.content,
+        'image_url': msg.image.url if msg.image else None,
+        'is_from_user': msg.is_from_user,
+        'created_at': msg.created_at.strftime('%d/%m/%Y %H:%M')
+    } for msg in messages_list]
+
+    return JsonResponse({
+        'success': True,
+        'messages': messages_data
+    })
+
+
+@login_required
+def delete_message(request, message_id):
+    """Xóa tin nhắn"""
+    if request.method == 'POST':
+        try:
+            message = Message.objects.get(id=message_id, user=request.user)
+
+            # Xóa file ảnh nếu có
+            if message.image:
+                message.image.delete()
+
+            message.delete()
+
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': True})
+
+            django_messages.success(request, 'Tin nhắn đã được xóa!')
+        except Message.DoesNotExist:
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': False, 'error': 'Tin nhắn không tồn tại'})
+
+            django_messages.error(request, 'Tin nhắn không tồn tại!')
+
+    return redirect('message_list')
 

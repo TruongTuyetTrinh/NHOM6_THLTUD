@@ -199,10 +199,10 @@
                         </a>
 
                         <button type="button"
-                                class="btn btn-primary btn-sm"
-                                onclick="openReviewModal({{ ticket.id }})">
-                            Đánh giá chuyến đi
-                        </button>
+        class="btn btn-primary btn-sm"
+        onclick="openReviewModal({{ ticket.id }}, '{% url 'submit_review' ticket.id %}')">
+    Đánh giá chuyến đi
+</button>
 
                         <!-- Đặt lại (logic giống thẻ ĐÃ HỦY) -->
                         {% if ticket.payment_order and ticket.payment_order.from_location %}
@@ -250,32 +250,58 @@
     <div class="review-box">
         <h3>Đánh giá chuyến đi</h3>
 
-        <input type="hidden" id="review-ticket-id">
+        <form id="review-form" enctype="multipart/form-data">
+            {% csrf_token %}
 
-        <label>Điểm đánh giá</label>
-        <select id="review-rating">
-            <option value="5">⭐⭐⭐⭐⭐</option>
-            <option value="4">⭐⭐⭐⭐</option>
-            <option value="3">⭐⭐⭐</option>
-            <option value="2">⭐⭐</option>
-            <option value="1">⭐</option>
-        </select>
+            <input type="hidden" id="review-ticket-id" name="ticket_id">
+            <input type="hidden" id="review-submit-url">
 
-        <label>Tiêu đề</label>
-        <input type="text" id="review-title" placeholder="Ví dụ: Chuyến đi rất thoải mái">
+            <label>Điểm đánh giá</label>
+            <div class="stars">
+                <input class="star star-5" id="star-5" type="radio" name="rating" value="5">
+                <label class="star star-5" for="star-5"></label>
 
-        <label>Nội dung</label>
-        <textarea id="review-content" placeholder="Chia sẻ trải nghiệm của bạn..."></textarea>
+                <input class="star star-4" id="star-4" type="radio" name="rating" value="4">
+                <label class="star star-4" for="star-4"></label>
 
-        <label>Hình ảnh (tùy chọn)</label>
-        <input type="file" id="review-image">
+                <input class="star star-3" id="star-3" type="radio" name="rating" value="3">
+                <label class="star star-3" for="star-3"></label>
 
-        <div class="review-actions">
-            <button onclick="submitReview()" class="btn btn-primary">Gửi đánh giá</button>
-            <button onclick="closeReviewModal()" class="btn btn-secondary">Hủy</button>
-        </div>
+                <input class="star star-2" id="star-2" type="radio" name="rating" value="2">
+                <label class="star star-2" for="star-2"></label>
+
+                <input class="star star-1" id="star-1" type="radio" name="rating" value="1">
+                <label class="star star-1" for="star-1"></label>
+            </div>
+
+            <label for="review-title">Tiêu đề</label>
+            <input type="text" id="review-title" name="title"
+                   placeholder="Ví dụ: Chuyến đi rất thoải mái">
+
+            <label for="review-content">Nội dung</label>
+            <textarea id="review-content" name="content"
+                      placeholder="Chia sẻ trải nghiệm của bạn..."></textarea>
+
+            <label for="review-image">Hình ảnh (tùy chọn)</label>
+            <input type="file" id="review-image" name="image">
+
+            <div class="review-actions">
+                <button type="button"
+                        onclick="closeReviewModal()"
+                        class="btn btn-secondary">
+                    Hủy
+                </button>
+                <button type="button"
+                        onclick="submitReview()"
+                        class="btn btn-primary">
+                    Gửi đánh giá
+                </button>
+            </div>
+        </form>
     </div>
 </div>
+
+
 {% endblock %}
 
 {% block extra_js %}

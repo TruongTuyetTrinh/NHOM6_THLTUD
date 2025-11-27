@@ -1,3 +1,4 @@
+/* ----- MODAL REVIEW (giống trước) ----- */
 .review-modal {
   position: fixed;
   inset: 0;
@@ -34,7 +35,6 @@
 }
 
 .review-box input[type="text"],
-.review-box select,
 .review-box textarea {
   width: 100%;
   padding: 8px 10px;
@@ -54,4 +54,225 @@
   display: flex;
   justify-content: flex-end;
   gap: 8px;
+}
+
+/* ----- SAO (Y HỆT DEMO) ----- */
+
+.review-box .stars {
+    width: 220px;
+    display: inline-block;
+}
+
+/* Ẩn radio gốc */
+.review-box input.star {
+    display: none;
+}
+
+/* label hình ngôi sao */
+.review-box label.star {
+    float: right;
+    padding: 5px;
+    font-size: 32px;
+    color: #d1d5db;
+    cursor: pointer;
+    transition: all .2s;
+}
+
+/* sao rỗng mặc định */
+.review-box label.star:before {
+    content: '\f006';              /* icon sao rỗng */
+    font-family: FontAwesome;
+}
+
+/* khi radio được chọn → các label phía trước nó thành sao đầy */
+.review-box input.star:checked ~ label.star:before {
+    content: '\f005';              /* icon sao đầy */
+    color: #facc15;
+    text-shadow: 0 0 6px rgba(0,0,0,0.3);
+    transition: all .25s;
+}
+
+/* chọn 5 sao thì màu sáng hơn chút */
+.review-box input.star-5:checked ~ label.star:before {
+    color: #fbbf24;
+    text-shadow: 0 0 10px rgba(234,179,8,0.6);
+}
+
+/* chọn 1 sao thì màu cam hơn */
+.review-box input.star-1:checked ~ label.star:before {
+    color: #f97316;
+}
+
+/* hover hiệu ứng xoay / phóng to */
+.review-box label.star:hover {
+    transform: rotate(-10deg) scale(1.15);
+}
+
+/* clear float */
+.review-box .stars:after {
+    content: "";
+    display: block;
+    clear: both;
+}
+input.star {
+    display: none !important;
+    appearance: none !important;
+    -webkit-appearance: none !important;
+}
+.stars {
+    direction: rtl;
+}
+
+.stars input.star {
+    float: right;
+}
+input.star {
+    display: none !important;
+    appearance: none !important;
+    -webkit-appearance: none !important;
+}
+.stars {
+    direction: rtl;
+}
+
+.stars input.star {
+    float: right;
+}
+/* ========= PAGE: ROUTE REVIEWS ========= */
+
+.reviews-page {
+    max-width: 1100px;
+    margin: 24px auto 48px;
+    padding: 0 16px;
+}
+
+.reviews-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.reviews-title {
+    margin: 0;
+    font-size: 28px;
+    font-weight: 700;
+    color: #111827;
+}
+
+.reviews-subtitle {
+    margin: 4px 0;
+    color: #4b5563;
+}
+
+.reviews-summary {
+    margin: 4px 0 0;
+    font-weight: 500;
+    color: #111827;
+}
+
+.reviews-layout {
+    display: grid;
+    grid-template-columns: 260px 1fr;
+    gap: 24px;
+}
+
+@media (max-width: 900px) {
+    .reviews-layout {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Sidebar */
+
+.reviews-sidebar {
+    background: #f9fafb;
+    border-radius: 12px;
+    padding: 16px 18px;
+    border: 1px solid #e5e7eb;
+}
+
+.sidebar-title {
+    font-size: 16px;
+    font-weight: 600;
+    margin: 0 0 12px;
+}
+
+.filter-btn {
+    display: block;
+    width: 100%;
+    padding: 8px 12px;
+    margin-bottom: 8px;
+    border-radius: 999px;
+    border: 1px solid #d1d5db;
+    background: #fff;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.filter-btn:hover {
+    background: #eff6ff;
+    border-color: #2563eb;
+}
+
+/* Review list */
+
+.reviews-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.review-card {
+    border-radius: 16px;
+    border: 1px solid #e5e7eb;
+    padding: 16px 20px 14px;
+    background: #fff;
+}
+
+.review-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 8px;
+}
+
+.review-author {
+    font-weight: 600;
+    color: #111827;
+}
+
+.review-meta {
+    font-size: 13px;
+    color: #6b7280;
+}
+
+.review-rating-stars .star {
+    font-size: 18px;
+    color: #e5e7eb;
+}
+
+.review-rating-stars .star.filled {
+    color: #fbbf24;
+}
+
+.review-title {
+    font-size: 15px;
+    font-weight: 600;
+    margin: 4px 0 4px;
+    color: #111827;
+}
+
+.review-content {
+    margin: 0 0 8px;
+    font-size: 14px;
+    color: #374151;
+}
+
+.review-image img {
+    max-width: 220px;
+    border-radius: 8px;
+    border: 1px solid #e5e7eb;
 }

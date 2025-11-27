@@ -1,0 +1,103 @@
+{% extends "ticket/base.html" %}
+{% load static humanize %}
+
+{% block title %}Nhà xe DaNaGO - Đánh giá tuyến {{ base_trip.departure_location }} → {{ base_trip.arrival_location }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/review.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="reviews-page">
+    <div class="reviews-header">
+        <div>
+            <h1 class="reviews-title">Nhà xe DaNaGO</h1>
+            <p class="reviews-subtitle">
+                {{ base_trip.departure_location }} → {{ base_trip.arrival_location }}
+            </p>
+            <p class="reviews-summary">
+                ⭐ {{ avg_rating|floatformat:1 }}/5
+                <span class="text-muted">({{ total_reviews }} đánh giá)</span>
+            </p>
+        </div>
+        <a href="{% url 'my_tickets' %}" class="btn btn-outline-secondary">
+            Quay lại vé của tôi
+        </a>
+    </div>
+
+    <div class="reviews-layout">
+        <!-- Cột trái: Lọc nhanh -->
+        <aside class="reviews-sidebar">
+            <h3 class="sidebar-title">Lọc nhanh</h3>
+            <button class="filter-btn" onclick="filterReviews('4+')">
+                4★ trở lên
+            </button>
+            <button class="filter-btn" onclick="filterReviews('3-')">
+                3★ trở xuống
+            </button>
+        </aside>
+
+        <!-- Cột phải: Danh sách đánh giá -->
+        <section class="reviews-list" id="reviews-list">
+            {% if feedbacks %}
+                {% for fb in feedbacks %}
+                <article class="review-card" data-rating="{{ fb.rating }}">
+                    <header class="review-card-header">
+                        <div>
+                            <div class="review-author">
+                                {{ fb.user.get_full_name|default:fb.user.username }}
+                            </div>
+                            <div class="review-meta">
+                                {{ fb.created_at|date:"d/m/Y H:i" }}
+                            </div>
+                        </div>
+                        <div class="review-rating-stars">
+                            {% for i in "12345" %}
+                                {% if forloop.counter <= fb.rating %}
+                                    <span class="star filled">★</span>
+                                {% else %}
+                                    <span class="star">★</span>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                    </header>
+
+                    <h4 class="review-title">{{ fb.title }}</h4>
+
+                    <p class="review-content">
+                        {{ fb.content|linebreaksbr }}
+                    </p>
+
+                    {% if fb.image %}
+                    <div class="review-image">
+                        <img src="{{ fb.image.url }}" alt="Ảnh đánh giá">
+                    </div>
+                    {% endif %}
+                </article>
+                {% endfor %}
+            {% else %}
+                <p class="text-muted">Chưa có đánh giá nào cho tuyến này.</p>
+            {% endif %}
+        </section>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Lọc nhanh theo sao (client-side)
+    function filterReviews(mode) {
+        const cards = document.querySelectorAll('.review-card');
+        cards.forEach(card => {
+            const rating = parseInt(card.dataset.rating || '0', 10);
+            let show = true;
+            if (mode === '4+') {
+                show = rating >= 4;
+            } else if (mode === '3-') {
+                show = rating <= 3;
+            }
+            card.style.display = show ? '' : 'none';
+        });
+    }
+</script>
+{% endblock %}

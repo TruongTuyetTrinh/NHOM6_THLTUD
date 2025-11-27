@@ -137,3 +137,9 @@ EMAIL_HOST_PASSWORD = 'mkjj scih mqra cyvw'  # tạo trong Google Account > Bả
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 # cuối file settings.py
 GOOGLE_SHEET_API_URL = "https://script.google.com/macros/s/AKfycbyxmyr8YiezmZE-Ce0arXXOw1ssMLgt05uCpitI5KFyiTfleR8DqENBjp-XxLJTdb2PTg/exec"
+import os
+from pathlib import Path
+BASE_DIR = Path(__file__).resolve().parent.parent
+
+MEDIA_URL = "/media/"
+MEDIA_ROOT = BASE_DIR / "media"

@@ -7,6 +7,9 @@
     <title>{% block title %}DaNaGo - Đặt vé xe khách online{% endblock %}</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet"
+      href="https://netdna.bootstrapcdn.com/font-awesome/3.2.1/css/font-awesome.css">
+
     <style>
         :root {
             --primary-blue: #1c2b3d;
@@ -471,13 +474,12 @@
                         <i class="fas fa-user-circle"></i>
                         <span>Thông tin tài khoản</span>
                     </a>
-                    <a href="/messages" class="dropdown-menu-item">
+                    <a href="{% url 'message_list' %}" class="dropdown-menu-item">
                         <i class="fas fa-comment-dots"></i>
                         <span>Tin nhắn</span>
                     </a>
-                    <a href="/feedback" class="dropdown-menu-item">
-                        <i class="fas fa-star"></i>
-                        <span>Đánh giá</span>
+                    <a href="{% url 'my_reviews_entry' %}" class="dropdown-menu-item">
+                        <i class="fa-solid fa-star"></i> Đánh giá
                     </a>
                     <a href="/notifications" class="dropdown-menu-item">
                         <i class="fas fa-bell"></i>

@@ -20,11 +20,9 @@ urlpatterns = [
     path('ticket/<int:ticket_id>/download/', views.download_ticket, name='download_ticket'),
     path('ticket/<int:ticket_id>/cancel/', views.cancel_ticket, name='cancel_ticket'),
 path("ticket/<int:pk>/rebook/", views.rebook_ticket, name="rebook_ticket"),
-
-    # urls.py
-    path("ticket/<int:pk>/rebook/", views.rebook_ticket, name="rebook_ticket"),
-
-    path("ticket/<int:pk>/review/", views.ticket_review, name="ticket_review"),
+path("ticket/<int:ticket_id>/review/", views.submit_review, name="submit_review"),
+    path("route-reviews/<int:trip_id>/", views.route_reviews, name="route_reviews"),
+    path("reviews/", views.my_reviews_entry, name="my_reviews_entry"),
 
     path('schedules/', views.schedules, name='schedules'),
 
@@ -35,7 +33,16 @@ path("ticket/<int:pk>/rebook/", views.rebook_ticket, name="rebook_ticket"),
 
     # User Features
     path('notifications/', views.notifications, name='notifications'),
-    # path('messages/', views.messages, name='messages'),
+    path("messages/", views.message_list, name="message_list"),
+
+    # Gửi tin nhắn qua AJAX
+    path("messages/send/", views.send_message, name="send_message"),
+
+    # Lấy tin nhắn qua AJAX (polling)
+    path("messages/get/", views.get_messages, name="get_messages"),
+
+    # Xóa tin nhắn
+    path("messages/delete/<int:message_id>/", views.delete_message, name="delete_message"),
 
 
     path('logout/', views.logout_view, name='logout'),
