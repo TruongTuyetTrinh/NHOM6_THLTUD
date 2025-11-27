@@ -1,4 +1,6 @@
 DaNaGO là hệ thống đặt vé xe bus trực tuyến hiện đại, được xây dựng trên framework Django. Dự án tập trung vào việc tự động hóa quy trình từ tìm kiếm, đặt vé, xác nhận thanh toán (thông qua Webhook) đến quản lý vòng đời vé (hủy, đánh giá) một cách minh bạch và hiệu quả.
+
+
 I. Quản Lý Tài Khoản và Bảo Mật
 Đăng ký & Đăng nhập: Người dùng có thể tạo tài khoản và đăng nhập vào hệ thống.
 Xác thực OTP: Thực hiện xác minh qua Mã OTP gửi qua Email trong quá trình đăng ký.
