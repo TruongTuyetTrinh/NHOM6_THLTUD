@@ -12,6 +12,7 @@ class CustomUser(AbstractUser):
         ('admin', 'Quản trị viên'),
         ('user', 'Người dùng'),
     ]
+
     phone = models.CharField(max_length=15, blank=True, null=True)
     birthday = models.DateField(null=True, blank=True)
     gender = models.CharField(max_length=10, choices=[('male', 'Nam'), ('female', 'Nữ'), ('other', 'Khác')], blank=True)

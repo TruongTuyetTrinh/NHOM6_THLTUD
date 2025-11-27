@@ -25,6 +25,7 @@ class CustomUserAdmin(UserAdmin):
         ('Thông tin bổ sung', {
             'fields': ('phone', 'birthday', 'gender', 'address', 'role')
         }),
+        
     )
 
 
@@ -320,4 +321,7 @@ class UserEmailAdmin(admin.ModelAdmin):
     )
 
     readonly_fields = ['added_at']
+
+
+
 

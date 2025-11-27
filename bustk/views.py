@@ -752,69 +752,142 @@ from django.views.decorators.http import require_http_methods
 from django.contrib.auth.decorators import login_required
 from .models import UserEmail, CustomUser  # Import CustomUser nếu dùng profile = user.customuser
 
+CustomUser = get_user_model()
+
+# views.py
+import json, re
+from datetime import datetime, date
+
+from django.contrib.auth import get_user_model
+from django.contrib.auth.decorators import login_required
+from django.views.decorators.http import require_http_methods
+from django.http import JsonResponse
+from django.shortcuts import render
+
+CustomUser = get_user_model()
+
+
 @login_required
 @require_http_methods(["GET", "POST"])
 def profile_settings(request):
-    if request.method == 'POST':
+    if request.method == "POST":
         try:
-            if request.headers.get('Content-Type') == 'application/json':
+            if request.headers.get("Content-Type", "").startswith("application/json"):
                 data = json.loads(request.body)
             else:
                 data = request.POST
 
-            action = data.get('action')
+            action = data.get("action")
+            if action != "update_profile":
+                return JsonResponse(
+                    {"status": "error", "message": "Yêu cầu không hợp lệ."},
+                    status=400,
+                )
 
-            # === CẬP NHẬT PROFILE ===
-            if action == 'update_profile':
-                user = request.user  # Đây là CustomUser
+            user = request.user  # CustomUser
 
-                # Cập nhật username
-                new_username = data.get('fullname', '').strip()
-                if new_username and new_username != user.username:
-                    if User.objects.filter(username=new_username).exclude(pk=user.pk).exists():
-                        return JsonResponse({'status': 'error', 'message': 'Tên đăng nhập đã tồn tại!'}, status=400)
-                    user.username = new_username
+            # ===== HỌ TÊN / USERNAME =====
+            new_username = (data.get("fullname") or "").strip()
+            if new_username and new_username != user.username:
+                if CustomUser.objects.filter(username=new_username).exclude(pk=user.pk).exists():
+                    return JsonResponse(
+                        {"status": "error", "message": "Tên đăng nhập đã tồn tại."},
+                        status=400,
+                    )
+                user.username = new_username
 
-                # Các field trong CustomUser
-                user.phone = data.get('phone') or None
-                user.birthday = data.get('birthday') or None
-                user.gender = data.get('gender') or None
-                user.address = data.get('address') or None
+            # ===== SỐ ĐIỆN THOẠI: 10 số, bắt đầu 0 =====
+            raw_phone = (data.get("phone") or "").strip()
+            if raw_phone:
+                if not re.fullmatch(r"0\d{9}", raw_phone):
+                    return JsonResponse(
+                        {
+                            "status": "error",
+                            "message": "Số điện thoại phải gồm 10 chữ số và bắt đầu bằng 0.",
+                        },
+                        status=400,
+                    )
+                user.phone = raw_phone
+            else:
+                user.phone = None
 
-                password = data.get('password')
-                if password:
-                    user.set_password(password)
-
-                user.save()
-                return JsonResponse({'status': 'success'})
-
-            # === THÊM EMAIL ===
-            elif action == 'add_email':
-                email = data.get('email')
-                if not email:
-                    return JsonResponse({'status': 'error', 'message': 'Email không được để trống'}, status=400)
-
-                if User.objects.filter(email=email).exists() or UserEmail.objects.filter(email=email).exists():
-                    return JsonResponse({'status': 'error', 'message': 'Email đã được sử dụng!'}, status=400)
-
-                UserEmail.objects.create(user=request.user, email=email)
-                return JsonResponse({'status': 'success'})
-
-            # === XÓA EMAIL ===
-            elif action == 'delete_email':
-                email_id = data.get('email_id')
+            # ===== NGÀY SINH: >= 18 tuổi =====
+            birthday_str = (data.get("birthday") or "").strip()
+            birthday = None
+            if birthday_str:
                 try:
-                    email_obj = UserEmail.objects.get(id=email_id, user=request.user)
-                    email_obj.delete()
-                    return JsonResponse({'status': 'success'})
-                except UserEmail.DoesNotExist:
-                    return JsonResponse({'status': 'error', 'message': 'Email không tồn tại'}, status=400)
+                    birthday = datetime.strptime(birthday_str, "%Y-%m-%d").date()
+                except ValueError:
+                    return JsonResponse(
+                        {"status": "error", "message": "Ngày sinh không hợp lệ."},
+                        status=400,
+                    )
 
-            return JsonResponse({'status': 'error', 'message': 'Yêu cầu không hợp lệ'}, status=400)
+                today = date.today()
+                age = (
+                    today.year
+                    - birthday.year
+                    - ((today.month, today.day) < (birthday.month, birthday.day))
+                )
+                if age < 18:
+                    return JsonResponse(
+                        {
+                            "status": "error",
+                            "message": "Bạn phải đủ 18 tuổi (>= 18).",
+                        },
+                        status=400,
+                    )
+
+            user.birthday = birthday
+
+            # ===== GIỚI TÍNH =====
+            gender = (data.get("gender") or "").strip()
+            if gender not in ("male", "female", "other", ""):
+                gender = ""
+            user.gender = gender
+
+            # ===== ĐỊA CHỈ =====
+            user.address = (data.get("address") or "").strip()
+
+            # ===== ĐỔI MẬT KHẨU (nếu có) =====
+            new_password = (data.get("password") or "").strip()
+            if new_password:
+                if len(new_password) < 6:
+                    return JsonResponse(
+                        {
+                            "status": "error",
+                            "message": "Mật khẩu mới phải từ 6 ký tự trở lên.",
+                        },
+                        status=400,
+                    )
+                user.set_password(new_password)
+                user.save()
+                return JsonResponse(
+                    {
+                        "status": "success",
+                        "message": "Đổi mật khẩu thành công. Vui lòng đăng nhập lại.",
+                        "require_relogin": True,
+                    }
+                )
+
+            user.save()
+
+            return JsonResponse(
+                {
+                    "status": "success",
+                    "message": "Cập nhật tài khoản thành công.",
+                    "require_relogin": False,
+                }
+            )
+
         except Exception as e:
-            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+            return JsonResponse(
+                {"status": "error", "message": str(e)},
+                status=500,
+            )
 
-    return render(request, 'ticket/profile_settings.html')
+    # GET
+    return render(request, "ticket/profile_settings.html")
 
 from django.utils import timezone
 from datetime import datetime
