@@ -445,8 +445,8 @@
             <!-- Center Navigation Links -->
             <div class="nav-center">
                 <a class="nav-link {% if request.resolver_match.url_name == 'index' %}active{% endif %}" href="/">Trang chủ</a>
-                <a class="nav-link {% if request.resolver_match.url_name == 'schedules' %}active{% endif %}" href="/schedules">Lịch trình</a>
                 <a class="nav-link {% if request.resolver_match.url_name == 'my_tickets' %}active{% endif %}" href="/my-tickets">Vé của tôi</a>
+                <a class="nav-link {% if request.resolver_match.url_name == 'message_list' %}active{% endif %}" href="/messages">Tin nhắn</a>
             </div>
 
             <!-- User Avatar -->
@@ -481,7 +481,7 @@
                     <a href="{% url 'my_reviews_entry' %}" class="dropdown-menu-item">
                         <i class="fa-solid fa-star"></i> Đánh giá
                     </a>
-                    <a href="/notifications" class="dropdown-menu-item">
+                    <a href="{% url 'notifications' %}" class="dropdown-menu-item">
                         <i class="fas fa-bell"></i>
                         <span>Thông báo</span>
                     </a>

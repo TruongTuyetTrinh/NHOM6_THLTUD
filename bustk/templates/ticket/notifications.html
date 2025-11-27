@@ -1,362 +1,135 @@
 {% extends "ticket/base.html" %}
+{% load static %}
 
-{% block title %}Thông báo - BusTicket{% endblock %}
+{% block title %}Thông báo - DaNaGo{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/notifications.css' %}">
+{% endblock %}
 
 {% block content %}
-<style>
-    .notifications-wrapper {
-        max-width: 1200px;
-        margin: 0 auto;
-        padding: 2rem 1rem;
-    }
-
-    .notifications-header {
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-        margin-bottom: 2rem;
-    }
-
-    .notifications-header h1 {
-        color: #1e3a5f;
-        font-size: 1.8rem;
-        margin: 0;
-    }
-
-    .header-icon {
-        width: 50px;
-        height: 50px;
-        background: #e8eaf6;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: #5b5bff;
-        font-size: 1.5rem;
-    }
-
-    .tabs-section {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 1rem;
-        margin-bottom: 2rem;
-    }
-
-    .tab-button {
-        padding: 1.5rem;
-        border: none;
-        background: white;
-        border-radius: 8px;
-        cursor: pointer;
-        font-weight: 600;
-        transition: all 0.3s;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-    }
-
-    .tab-button.active {
-        background: #5b5bff;
-        color: white;
-    }
-
-    .tab-button:not(.active) {
-        color: #666;
-    }
-
-    .tab-content {
-        display: none;
-    }
-
-    .tab-content.active {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-        gap: 1rem;
-    }
-
-    .notification-card {
-        background: white;
-        border-radius: 8px;
-        padding: 1.5rem;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-        transition: all 0.3s;
-        border-left: 4px solid #5b5bff;
-        display: flex;
-        gap: 1rem;
-    }
-
-    .notification-card:hover {
-        box-shadow: 0 4px 12px rgba(0,0,0,0.12);
-    }
-
-    .notification-card.unread {
-        background: #f0f0ff;
-    }
-
-    .notification-card.read {
-        opacity: 0.7;
-        background: #fafafa;
-        border-left-color: #d0d0d0;
-    }
-
-    .notification-icon {
-        width: 60px;
-        height: 60px;
-        border-radius: 12px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.8rem;
-        flex-shrink: 0;
-    }
-
-    .notification-icon.discount {
-        background: #fff3e0;
-        color: #ff9800;
-    }
-
-    .notification-icon.trip {
-        background: #e3f2fd;
-        color: #2196f3;
-    }
-
-    .notification-icon.security {
-        background: #ede7f6;
-        color: #9c27b0;
-    }
-
-    .notification-icon.schedule {
-        background: #fce4ec;
-        color: #e91e63;
-    }
-
-    .notification-icon.system {
-        background: #e0f2f1;
-        color: #009688;
-    }
-
-    .notification-content {
-        flex: 1;
-    }
-
-    .notification-title {
-        font-weight: 700;
-        color: #1e3a5f;
-        margin: 0 0 0.5rem 0;
-        font-size: 0.95rem;
-    }
-
-    .notification-description {
-        color: #666;
-        font-size: 0.85rem;
-        margin: 0 0 0.75rem 0;
-        line-height: 1.4;
-    }
-
-    .notification-footer {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-
-    .notification-time {
-        font-size: 0.8rem;
-        color: #999;
-    }
-
-    .read-indicator {
-        width: 12px;
-        height: 12px;
-        border-radius: 50%;
-        background: #5b5bff;
-    }
-
-    .pagination {
-        display: flex;
-        justify-content: center;
-        gap: 1rem;
-        margin-top: 2rem;
-    }
-
-    .pagination-dot {
-        width: 8px;
-        height: 8px;
-        border-radius: 50%;
-        background: #ddd;
-        cursor: pointer;
-        transition: all 0.3s;
-    }
-
-    .pagination-dot.active {
-        background: #5b5bff;
-        width: 24px;
-        border-radius: 4px;
-    }
-</style>
-
 <div class="notifications-wrapper">
-    <!-- Updated header with icon -->
+    <!-- Header -->
     <div class="notifications-header">
         <div class="header-icon">
             <i class="fas fa-bell"></i>
         </div>
-        <h1>Thông báo</h1>
+        <div>
+            <h1>Thông báo</h1>
+            <p style="margin:0; color:#6b7280; font-size:0.9rem;">
+                Bạn có {{ unread_count }} thông báo chưa đọc.
+            </p>
+        </div>
     </div>
 
-    <!-- Changed to 2-column tab layout instead of horizontal tabs -->
+    <!-- Tabs -->
     <div class="tabs-section">
-        <button class="tab-button active" onclick="switchTab('my-schedule', this)">
+        <button class="tab-button active"
+                data-target="my-schedule"
+                onclick="switchTab('my-schedule', this)">
             Lịch trình của tôi
         </button>
-        <button class="tab-button" onclick="switchTab('other-notifications', this)">
+        <button class="tab-button"
+                data-target="other-notifications"
+                onclick="switchTab('other-notifications', this)">
             Thông báo khác
         </button>
     </div>
 
-    <!-- Tab: My Schedule Notifications -->
+    <!-- TAB 1: Lịch trình của tôi -->
     <div id="my-schedule" class="tab-content active">
-        <div class="notification-card unread">
-            <div class="notification-icon trip">
-                <i class="fas fa-check-circle"></i>
-            </div>
-            <div class="notification-content">
-                <p class="notification-title">Vé đã đặt thành công</p>
-                <p class="notification-description">Chuyến đi Ngũ Hành Sơn - Liên Chiểu đã được xác nhận</p>
-                <div class="notification-footer">
-                    <span class="notification-time">2 phút trước</span>
-                    <div class="read-indicator"></div>
+        {% if schedule_notifications %}
+            {% for n in schedule_notifications %}
+                <div class="notification-card {% if n.is_read %}read{% else %}unread{% endif %}">
+                    <div class="notification-icon
+                        {% if n.type == 'BOOKING_SUCCESS' %}trip
+                        {% elif n.type == 'CANCEL_SUCCESS' %}trip
+                        {% elif n.type == 'TRIP_REMINDER' %}schedule
+                        {% elif n.type == 'TRIP_START' %}schedule
+                        {% elif n.type == 'TRIP_COMPLETED' %}schedule
+                        {% else %}system
+                        {% endif %}
+                    ">
+                        {% if n.type == 'BOOKING_SUCCESS' %}
+                            <i class="fas fa-check-circle"></i>
+                        {% elif n.type == 'CANCEL_SUCCESS' %}
+                            <i class="fas fa-times-circle"></i>
+                        {% elif n.type == 'TRIP_REMINDER' %}
+                            <i class="fas fa-clock"></i>
+                        {% elif n.type == 'TRIP_START' %}
+                            <i class="fas fa-bus"></i>
+                        {% elif n.type == 'TRIP_COMPLETED' %}
+                            <i class="fas fa-flag-checkered"></i>
+                        {% else %}
+                            <i class="fas fa-info-circle"></i>
+                        {% endif %}
+                    </div>
+                    <div class="notification-content">
+                        <p class="notification-title">{{ n.title }}</p>
+                        <p class="notification-description">
+                            {{ n.body|linebreaksbr }}
+                        </p>
+                        <div class="notification-footer">
+                            <span class="notification-time">
+                                {{ n.created_at|date:"H:i d/m/Y" }}
+                                {% if n.trip %}
+                                    • {{ n.trip.departure_location }} → {{ n.trip.arrival_location }}
+                                {% endif %}
+                            </span>
+                            {% if not n.is_read %}
+                                <div class="read-indicator"></div>
+                            {% endif %}
+                        </div>
+                    </div>
                 </div>
-            </div>
-        </div>
-
-        <div class="notification-card unread">
-            <div class="notification-icon schedule">
-                <i class="fas fa-flag"></i>
-            </div>
-            <div class="notification-content">
-                <p class="notification-title">Chuyến kế tiếp</p>
-                <p class="notification-description">Cảm ơn bạn đã sử dụng dịch vụ! Chuyến đã hoàn thành!</p>
-                <div class="notification-footer">
-                    <span class="notification-time">14 tiếng trước</span>
-                    <div class="read-indicator"></div>
-                </div>
-            </div>
-        </div>
-
-        <div class="notification-card read">
-            <div class="notification-icon schedule">
-                <i class="fas fa-clock"></i>
-            </div>
-            <div class="notification-content">
-                <p class="notification-title">Chuẩn bị khởi hành</p>
-                <p class="notification-description">Chuyến đi Hải Châu - Ngũ Hành Sơn sẽ khởi hành trong 30 phút nữa.</p>
-                <div class="notification-footer">
-                    <span class="notification-time">15 tiếng trước</span>
-                </div>
-            </div>
-        </div>
-
-        <div class="notification-card read">
-            <div class="notification-icon trip">
-                <i class="fas fa-exclamation-circle"></i>
-            </div>
-            <div class="notification-content">
-                <p class="notification-title">Thay đổi lịch trình</p>
-                <p class="notification-description">Xe bị trễ 30p cho gặp sự cố!</p>
-                <div class="notification-footer">
-                    <span class="notification-time">2 ngày trước</span>
-                </div>
-            </div>
-        </div>
+            {% endfor %}
+        {% else %}
+            <p style="color:#9ca3af; font-size:0.9rem;">Chưa có thông báo về lịch trình.</p>
+        {% endif %}
     </div>
 
-    <!-- Tab: Other Notifications (Discounts, Offers, Security, Updates) -->
+    <!-- TAB 2: Thông báo khác -->
     <div id="other-notifications" class="tab-content">
-        <div class="notification-card unread">
-            <div class="notification-icon discount">
-                <i class="fas fa-percent"></i>
-            </div>
-            <div class="notification-content">
-                <p class="notification-title">Giảm 20% chuyến đi tiếp theo</p>
-                <p class="notification-description">Áp dụng đến 22/10. Đặt vé ngay để tiết kiệm!</p>
-                <div class="notification-footer">
-                    <span class="notification-time">4 phút trước</span>
-                    <div class="read-indicator"></div>
+        {% if other_notifications %}
+            {% for n in other_notifications %}
+                <div class="notification-card {% if n.is_read %}read{% else %}unread{% endif %}">
+                    <div class="notification-icon
+                        {% if n.type == 'OTHER' %}system
+                        {% else %}system
+                        {% endif %}
+                    ">
+                        <i class="fas fa-info-circle"></i>
+                    </div>
+                    <div class="notification-content">
+                        <p class="notification-title">{{ n.title }}</p>
+                        <p class="notification-description">
+                            {{ n.body|linebreaksbr }}
+                        </p>
+                        <div class="notification-footer">
+                            <span class="notification-time">
+                                {{ n.created_at|date:"H:i d/m/Y" }}
+                            </span>
+                            {% if not n.is_read %}
+                                <div class="read-indicator"></div>
+                            {% endif %}
+                        </div>
+                    </div>
                 </div>
-            </div>
-        </div>
-
-        <div class="notification-card unread">
-            <div class="notification-icon system">
-                <i class="fas fa-info-circle"></i>
-            </div>
-            <div class="notification-content">
-                <p class="notification-title">Cập nhật hệ thống</p>
-                <p class="notification-description">Phiên bản 2.5.1 đã có, nâng cấp để trải nghiệm mượt hơn.</p>
-                <div class="notification-footer">
-                    <span class="notification-time">1 ngày trước</span>
-                    <div class="read-indicator"></div>
-                </div>
-            </div>
-        </div>
-
-        <div class="notification-card read">
-            <div class="notification-icon security">
-                <i class="fas fa-lock"></i>
-            </div>
-            <div class="notification-content">
-                <p class="notification-title">Đăng nhập mới từ thiết bị khác</p>
-                <p class="notification-description">Tài khoản của bạn vừa được truy cập từ iPhone 14.</p>
-                <div class="notification-footer">
-                    <span class="notification-time">2 tiếng trước</span>
-                </div>
-            </div>
-        </div>
-
-        <div class="notification-card read">
-            <div class="notification-icon discount">
-                <i class="fas fa-gift"></i>
-            </div>
-            <div class="notification-content">
-                <p class="notification-title">Khuyến mãi & ưu đãi</p>
-                <p class="notification-description">Mã giới thiệu: FRIEND20. Nhận 20k khi bạn bè đặt vé!</p>
-                <div class="notification-footer">
-                    <span class="notification-time">3 ngày trước</span>
-                </div>
-            </div>
-        </div>
-
-        <div class="notification-card read">
-            <div class="notification-icon security">
-                <i class="fas fa-exclamation-triangle"></i>
-            </div>
-            <div class="notification-content">
-                <p class="notification-title">Cảnh báo bảo mật</p>
-                <p class="notification-description">Phát hiện đăng nhập bất thường. Hãy kiểm tra hoạt động tài khoản.</p>
-                <div class="notification-footer">
-                    <span class="notification-time">5 ngày trước</span>
-                </div>
-            </div>
-        </div>
+            {% endfor %}
+        {% else %}
+            <p style="color:#9ca3af; font-size:0.9rem;">Chưa có thông báo khác.</p>
+        {% endif %}
     </div>
 
+    <!-- Pagination fake (UI thôi, chưa phân trang thật) -->
     <div class="pagination">
         <span class="pagination-dot active" onclick="goToPage(1)"></span>
         <span class="pagination-dot" onclick="goToPage(2)"></span>
         <span class="pagination-dot" onclick="goToPage(3)"></span>
     </div>
 </div>
+{% endblock %}
 
-<script>
-    function switchTab(tab, button) {
-        document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-        document.getElementById(tab).classList.add('active');
-        document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
-        button.classList.add('active');
-    }
-
-    function goToPage(page) {
-        const dots = document.querySelectorAll('.pagination-dot');
-        dots.forEach(dot => dot.classList.remove('active'));
-        dots[page - 1].classList.add('active');
-    }
-</script>
+{% block extra_js %}
+<script src="{% static 'js/notifications.js' %}"></script>
 {% endblock %}

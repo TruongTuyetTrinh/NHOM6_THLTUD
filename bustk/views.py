@@ -42,6 +42,7 @@ from django.http import JsonResponse
 from django.db.models import Avg, Count
 
 from .models import Ticket, Trip, Feedback
+from .models import Notification
 
 # === THÊM 3 DÒNG NÀY (CHỈ CẦN THÊM, KHÔNG SỬA GÌ KHÁC) ===
 import random
@@ -677,14 +678,65 @@ def create_tickets_from_order(order):
                 status="upcoming",
                 payment_order=order,
             )
+        if order.trip:
+            Notification.objects.create(
+                user=order.user,
+                ticket=ticket,
+                trip=order.trip,
+                type=Notification.Type.BOOKING_SUCCESS,
+                title="Đặt vé thành công",
+                body=(
+                    f"Bạn đã đặt vé thành công cho chuyến "
+                    f"{order.trip.departure_location} → {order.trip.arrival_location} "
+                    f"lúc {order.trip.departure_time:%H:%M %d/%m/%Y}. "
+                    f"Số ghế: {seat}."
+                )
+            )
+        else:
+            # Trường hợp không có trip (đặt vé theo kiểu custom)
+            Notification.objects.create(
+                user=order.user,
+                ticket=ticket,
+                type=Notification.Type.BOOKING_SUCCESS,
+                title="Đặt vé thành công",
+                body=f"Bạn đã đặt vé thành công. Mã đặt chỗ: {order.ticket_code}."
+            )
 
 @login_required(login_url='login')
 def schedules(request):
     return render(request, 'ticket/schedules.html')
+# views.py
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import render
+from .models import Notification, Trip, Ticket
+from django.db.models import Q
 
 @login_required(login_url='login')
-def notifications(request):
-    return render(request, 'ticket/notifications.html')
+def notifications_list(request):
+    # Lấy tất cả thông báo của user
+    noti_qs = Notification.objects.filter(user=request.user).order_by('-created_at')
+
+    # Nhóm "Lịch trình của tôi"
+    schedule_types = [
+        Notification.Type.BOOKING_SUCCESS,
+        Notification.Type.CANCEL_SUCCESS,
+        Notification.Type.TRIP_REMINDER,
+        Notification.Type.TRIP_START,
+        Notification.Type.TRIP_COMPLETED,
+    ]
+
+    schedule_notifications = noti_qs.filter(type__in=schedule_types)
+    other_notifications    = noti_qs.exclude(type__in=schedule_types)
+
+    # Tuỳ bạn: vào trang là mark read hết:
+    noti_qs.filter(is_read=False).update(is_read=True)
+
+    context = {
+        "schedule_notifications": schedule_notifications,
+        "other_notifications": other_notifications,
+        "unread_count": noti_qs.filter(is_read=False).count(),  # sau update sẽ = 0
+    }
+    return render(request, "ticket/notifications.html", context)
 
 # @login_required(login_url='login')
 # def messages(request):

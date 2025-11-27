@@ -32,7 +32,7 @@ path("ticket/<int:ticket_id>/review/", views.submit_review, name="submit_review"
     path('casso-webhook/', views.casso_webhook, name='casso_webhook'),
 
     # User Features
-    path('notifications/', views.notifications, name='notifications'),
+    path('notifications/', views.notifications_list, name='notifications'),
     path("messages/", views.message_list, name="message_list"),
 
     # Gửi tin nhắn qua AJAX
